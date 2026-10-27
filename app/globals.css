@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: light; }
+  html { scroll-behavior: smooth; min-width: 320px; }
+  body { @apply bg-cream font-sans text-ink antialiased; min-width: 320px; }
+  h1, h2, h3 { @apply font-serif tracking-tight; }
+  ::selection { @apply bg-terra/20; }
+  :focus-visible { @apply outline-none ring-2 ring-terra ring-offset-2 ring-offset-cream; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  }
+}
+
+@layer components {
+  /* Buttons (shadcn-style variants) */
+  .btn { @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-line bg-card px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-150 hover:border-ink/30 hover:bg-white active:translate-y-px disabled:pointer-events-none disabled:opacity-50; }
+  .btn-primary { @apply btn border-terra bg-terra text-white hover:border-terra hover:bg-terra/90; }
+  .btn-dark { @apply btn border-ink bg-ink text-sand hover:border-ink hover:bg-ink/90; }
+  .btn-ghost { @apply btn border-transparent bg-transparent shadow-none hover:bg-ink/5; }
+  .btn-lg { @apply px-6 py-3 text-base; }
+  .whatsapp-cta { @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-black/80 bg-gradient-to-br from-[#25D366] to-[#128C3A] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(18,140,58,.28)] ring-1 ring-black ring-offset-2 ring-offset-card transition-all duration-200 hover:-translate-y-0.5 hover:from-[#20c35e] hover:to-[#0d7830] hover:shadow-[0_12px_26px_rgba(18,140,58,.36)] active:translate-y-px active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2; }
+  .whatsapp-float { @apply border border-black bg-gradient-to-br from-[#25D366] via-[#19b94f] to-[#128C3A] shadow-[0_8px_24px_rgba(18,38,28,.38)] ring-2 ring-black ring-offset-2 ring-offset-cream transition-all duration-200 hover:-translate-y-1 hover:from-[#2be875] hover:via-[#20c35e] hover:to-[#0d7830] hover:shadow-[0_12px_30px_rgba(18,38,28,.48)] active:translate-y-px; }
+
+  /* Layout and surfaces */
+  .eyebrow { @apply text-xs font-bold uppercase tracking-[.14em] text-terra; }
+  .wrap { @apply mx-auto max-w-6xl px-5 py-12 md:py-14; }
+  .panel { @apply rounded-xl border border-line bg-card p-5 shadow-sm; }
+  .panel-hover { @apply transition duration-200 hover:-translate-y-1 hover:border-terra/40 hover:shadow-lg; }
+
+  /* Forms */
+  .field { @apply w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink shadow-sm transition placeholder:text-mute/70 hover:border-ink/30 focus:border-terra; }
+  .label { @apply mb-1.5 block text-sm font-semibold; }
+
+  /* Badges */
+  .badge { @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold; }
+  .badge-terra { @apply badge border-terra/25 bg-terra/10 text-terra; }
+  .badge-moss { @apply badge border-moss/25 bg-moss/10 text-moss; }
+  .badge-sand { @apply badge border-sand/60 bg-sand/30 text-ink; }
+
+  /* Segmented control */
+  .seg { @apply inline-flex w-full rounded-lg border border-line bg-white p-1 shadow-sm; }
+  .seg-item { @apply flex-1 rounded-md px-3 py-1.5 text-sm font-semibold text-mute transition hover:text-ink; }
+  .seg-item[aria-pressed="true"] { @apply bg-ink text-sand shadow; }
+
+  /* Range slider */
+  input[type="range"] { @apply h-2 cursor-pointer appearance-none rounded-full bg-line accent-terra; }
+  input[type="range"]::-webkit-slider-thumb { @apply h-5 w-5 appearance-none rounded-full border-2 border-white bg-terra shadow-md transition hover:scale-110; }
+  input[type="range"]::-moz-range-thumb { @apply h-5 w-5 rounded-full border-2 border-white bg-terra shadow-md; }
+
+  /* Animations */
+  .fade-in { animation: fadeIn .35s ease both; }
+  .pop-in { animation: popIn .22s cubic-bezier(.16, 1, .3, 1) both; }
+  .overlay-in { animation: fadeIn .2s ease both; }
+
+  /* Header and menu animations */
+  .header-drop { animation: headerDrop .6s cubic-bezier(.16, 1, .3, 1) both; }
+  .drawer-in { animation: drawerIn .38s cubic-bezier(.16, 1, .3, 1) both; }
+  .backdrop-in { animation: backdropIn .25s ease both; }
+  .stagger { animation: staggerIn .45s cubic-bezier(.16, 1, .3, 1) both; }
+  .shimmer { position: relative; overflow: hidden; isolation: isolate; }
+  .shimmer::after { content: ""; position: absolute; inset: 0; z-index: -1; transform: translateX(-120%); background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); animation: shimmer 3.8s ease-in-out infinite; }
+  .float-soft { animation: floatSoft 3.2s ease-in-out infinite; }
+}
+
+@media (max-width: 639px) {
+  .wrap { @apply px-4; }
+  .panel { @apply p-4; }
+}
+
+/* Hero slider */
+@keyframes slideProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.08); } }
+.slide-progress { transform-origin: left; animation: slideProgress 6500ms linear forwards; }
+.kenburns { animation: kenburns 9s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) { .slide-progress, .kenburns { animation: none; } }
+
+/* Content protection: discourage saving and screenshots (cannot fully prevent them) */
+img { -webkit-user-drag: none; user-select: none; -webkit-touch-callout: none; }
+html.shield img, html.shield iframe { filter: blur(22px) !important; transition: filter .12s; }
+@media print { body { display: none !important; } html::before { content: "Printing is disabled. Please contact B B Homes for brochures and property documents."; display: block; padding: 3rem; font: 18px sans-serif; } }
+
+@keyframes headerDrop { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: none; } }
+@keyframes drawerIn { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes staggerIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@keyframes shimmer { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@keyframes floatSoft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes popIn { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: none; } }

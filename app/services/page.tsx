@@ -1,0 +1,5 @@
+import type { Metadata } from "next"; import { ServiceForm } from "@/components/Tools"; import PageHero from "@/components/PageHero"; import { IMG } from "@/lib/data"; import { Check } from "@/components/Icons";
+export const metadata: Metadata = { title: "Home services" };
+const s = ["Property management", "Maintenance", "Renovation", "Repairs", "Facilities management", "Construction support", "Valuation coordination", "Letting and rental management"];
+export default function Services() { return <><PageHero eyebrow="Home services" title="Management, repairs, renovation" intro="Every request gets a reference and a visible status, so you are never left guessing." img={IMG.home2} />
+  <div className="wrap"><ul className="mb-8 flex flex-wrap gap-2">{s.map((x) => <li key={x} className="flex items-center gap-1.5 rounded-full border border-line bg-card px-4 py-1.5 text-sm shadow-sm"><Check width={14} height={14} className="text-moss" strokeWidth={2.5} />{x}</li>)}</ul><ServiceForm /></div></>; }
