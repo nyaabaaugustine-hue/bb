@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link"; import { usePathname } from "next/navigation"; import { useCallback, useEffect, useRef, useState } from "react";
-import Logo from "./Logo"; import Img from "./Img";
+import { createPortal } from "react-dom"; import Logo from "./Logo"; import Img from "./Img";
 import { listings, IMG, PHONE, PHONE_HREF, money, gmailLink } from "@/lib/data";
 import { Menu, Close, Key, Home, Land, Crane, Trend, Wrench, Doc, Shield, Users, Pin, Phone, Gmail, Arrow } from "./Icons";
 
@@ -34,15 +34,16 @@ const MEGA: Record<string, Mega> = {
 };
 const TOP: { key: string; label: string; href: string }[] = [
   { key: "homes", label: MEGA.homes.label, href: "/homes" }, { key: "build", label: MEGA.build.label, href: "/land-and-build" }, { key: "services", label: MEGA.services.label, href: "/services" },
-  { key: "invest", label: "Invest", href: "/invest" }, { key: "about", label: "About", href: "/about" },
+  { key: "invest", label: "Invest", href: "/invest" }, { key: "blog", label: "News & stories", href: "/blog" }, { key: "about", label: "About", href: "/about" },
 ];
-const PLAIN = [{ href: "/invest", label: "Invest", icon: Trend }, { href: "/about", label: "About", icon: Users }];
+const PLAIN = [{ href: "/invest", label: "Invest", icon: Trend }, { href: "/blog", label: "News & stories", icon: Doc }, { href: "/about", label: "About", icon: Users }];
 
 const Chevron = ({ open }: { open: boolean }) => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6" /></svg>;
 
 export default function Nav() {
   const p = usePathname(); const [menu, setMenu] = useState<string | null>(null); const [mobile, setMobile] = useState(false); const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0); const [acc, setAcc] = useState<string | null>("homes");
+  const [mounted, setMounted] = useState(false); useEffect(() => { setMounted(true); }, []);
   const closeT = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); const head = useRef<HTMLElement>(null);
 
   const open = useCallback((k: string | null) => { clearTimeout(closeT.current); setMenu(k); }, []);
@@ -78,7 +79,7 @@ export default function Nav() {
       {m && <div aria-hidden className="backdrop-in pointer-events-none fixed inset-0 -z-10 hidden bg-ink/25 backdrop-blur-[2px] lg:block" />}
 
       {/* Floating bar */}
-      <div className={`relative overflow-hidden rounded-2xl border backdrop-blur-xl transition-all duration-300 ${scrolled ? "border-line bg-cream/95 shadow-2xl" : "border-white/50 bg-cream/80 shadow-lg"}`}>
+      <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 lg:backdrop-blur-xl ${scrolled ? "border-line bg-cream/95 shadow-2xl max-lg:bg-cream" : "border-white/50 bg-cream/80 shadow-lg max-lg:bg-cream"}`}>
         {/* Utility strip (collapses on scroll) */}
         <div className={`hidden items-center justify-between overflow-hidden px-5 text-xs text-mute transition-all duration-300 lg:flex ${scrolled ? "max-h-0 border-0 py-0 opacity-0" : "max-h-10 border-b border-line/70 py-1.5 opacity-100"}`}>
           <span className="flex items-center gap-1.5"><Pin width={13} height={13} className="text-terra" />Tamale, Ghana · serving Accra, Kumasi and Tamale</span>
@@ -87,22 +88,22 @@ export default function Nav() {
             <a href={gmailLink()} target="_blank" rel="noopener" className="flex items-center gap-1.5 font-semibold text-ink transition hover:text-terra"><Gmail width={15} height={15} />Gmail</a></span>
         </div>
 
-        <div className="flex items-center justify-between gap-4 px-4 py-2.5 lg:px-5">
-          <Link href="/" aria-label="B B Homes, home page" className="group/logo flex shrink-0 items-center"><Logo height={scrolled ? 36 : 44} blend animate className="transition-all duration-300" /></Link>
+        <div className="flex items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-4 sm:py-2.5 lg:px-5">
+          <Link href="/" aria-label="B B Homes, home page" className="group/logo flex min-w-0 flex-1 items-center lg:flex-none"><Logo height={scrolled ? 34 : 40} blend animate fit className="transition-all duration-300" /></Link>
 
           <nav aria-label="Main" className="hidden items-center gap-0.5 lg:flex">
             {TOP.map((t) => { const on = isOn(t.href); const isMega = t.key in MEGA; const expanded = menu === t.key;
               return (<Link key={t.key} href={t.href} aria-current={on ? "page" : undefined} aria-haspopup={isMega ? "true" : undefined} aria-expanded={isMega ? expanded : undefined}
                 onMouseEnter={() => open(isMega ? t.key : null)} onFocus={() => open(isMega ? t.key : null)}
-                className={`group relative flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors duration-200 hover:bg-ink/5 hover:text-terra ${on || expanded ? "text-terra" : ""}`}>
+                className={`group relative flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-200 hover:bg-ink/5 hover:text-terra ${on || expanded ? "text-terra" : ""}`}>
                 {t.label}{isMega && <Chevron open={expanded} />}
                 <span aria-hidden className={`absolute inset-x-3.5 -bottom-0.5 h-0.5 origin-center rounded bg-terra transition-transform duration-300 ease-out ${on || expanded ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`} /></Link>); })}
           </nav>
 
           <div className="flex items-center gap-2">
             <Link href="/contact" className="btn-primary shimmer hidden !rounded-xl transition-transform hover:-translate-y-0.5 hover:shadow-lg lg:inline-flex" onMouseEnter={() => open(null)}>Talk to us</Link>
-            <a href={gmailLink()} target="_blank" rel="noopener" aria-label="Email us by Gmail" className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-card shadow-sm transition active:scale-95 lg:hidden"><Gmail width={20} height={20} /></a>
-            <button type="button" className="btn !px-2.5 transition active:scale-95 lg:hidden" onClick={() => setMobile((v) => !v)} aria-label={mobile ? "Close menu" : "Open menu"} aria-expanded={mobile} aria-controls="mobile-nav"><Menu /></button>
+            <a href={gmailLink()} target="_blank" rel="noopener" aria-label="Email us by Gmail" className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-card shadow-sm transition active:scale-95 min-[400px]:flex lg:hidden"><Gmail width={20} height={20} /></a>
+            <button type="button" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ink bg-ink text-sand shadow-md transition active:scale-95 lg:hidden" onClick={() => setMobile((v) => !v)} aria-label={mobile ? "Close menu" : "Open menu"} aria-expanded={mobile} aria-controls="mobile-nav"><Menu /></button>
           </div>
         </div>
 
@@ -135,7 +136,7 @@ export default function Nav() {
     </div></header>
 
     {/* Mobile and tablet drawer is a sibling of the header so header events cannot intercept it. */}
-    {mobile && <>
+    {mobile && mounted && createPortal(<>
         <button type="button" aria-label="Close menu" onClick={() => setMobile(false)} className="backdrop-in fixed inset-0 z-[60] border-0 bg-ink/60 p-0 backdrop-blur-sm lg:hidden" />
         <nav id="mobile-nav" aria-label="Mobile" className="drawer-in fixed inset-y-0 right-0 z-[61] flex h-[100dvh] max-h-[100dvh] w-[min(22rem,92vw)] flex-col rounded-l-3xl bg-cream pt-[env(safe-area-inset-top)] shadow-2xl lg:hidden">
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -169,6 +170,6 @@ export default function Nav() {
               <a href={PHONE_HREF} className="btn active:scale-95"><Phone width={16} height={16} />Call</a></div>
             <Link href="/contact" className="btn-primary shimmer !py-3 active:scale-95">Talk to us</Link>
           </div>
-        </nav></>}
+        </nav></>, document.body)}
   </>);
 }

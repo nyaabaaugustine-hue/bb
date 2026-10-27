@@ -1,5 +1,6 @@
 import Link from "next/link"; import Finder from "@/components/Finder"; import Img from "@/components/Img"; import Enquire from "@/components/Enquire";
 import Team from "@/components/Team"; import MapEmbed from "@/components/MapEmbed"; import HeroSlider from "@/components/HeroSlider"; import Offers from "@/components/Offers";
+import JourneyFlow from "@/components/JourneyFlow";
 import { listings, IMG, PROMISES, STEPS, FAQ } from "@/lib/data";
 import { Arrow, Shield, Check } from "@/components/Icons";
 const doors = [
@@ -37,9 +38,7 @@ export default function Home() {
 
     {/* HOW IT WORKS */}
     <section className="wrap"><p className="eyebrow">How it works</p><h2 className="mb-8 mt-1 text-2xl md:text-3xl">From first question to the front door</h2>
-      <ol className="grid gap-5 md:grid-cols-5">{STEPS.map(([t, d], i) => <li key={t} className="relative"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-terra font-serif text-lg font-bold text-white shadow">{i + 1}</span>
-        {i < STEPS.length - 1 && <span aria-hidden className="absolute left-12 top-5 hidden h-px w-[calc(100%-2rem)] bg-line md:block" />}
-        <b className="mt-3 block">{t}</b><p className="mt-1 text-sm text-mute">{d}</p></li>)}</ol></section>
+      <JourneyFlow steps={STEPS} /></section>
 
     {/* FLYWHEEL */}
     <section className="wrap !pt-0"><p className="eyebrow">How it fits together</p><h2 className="mb-6 mt-1 text-2xl md:text-3xl">One customer, many steps, one relationship</h2><ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{flywheel.map((f, i) => <li key={f} className="panel panel-hover !p-4"><span className="font-serif text-2xl text-terra/80">{String(i + 1).padStart(2, "0")}</span><p className="mt-1 text-sm font-semibold">{f}</p></li>)}</ol></section>

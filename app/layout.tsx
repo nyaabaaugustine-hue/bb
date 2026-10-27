@@ -3,8 +3,8 @@ import Nav from "@/components/Nav"; import Consultant from "@/components/Consult
 const sans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sans", display: "swap" });
 const serif = Libre_Baskerville({ subsets: ["latin"], weight: ["700"], variable: "--font-serif", display: "swap" });
 export const metadata: Metadata = { icons: { icon: logoIconUrl(64), shortcut: logoIconUrl(64), apple: logoIconUrl(180) }, title: { default: "B B Homes", template: "%s · B B Homes" }, description: "A home is a human right, we build it. Rent, buy land, build, buy a house and invest with B B Homes." };
-export const viewport: Viewport = { themeColor: "#f5f0e4", width: "device-width", initialScale: 1 };
-const explore = [["/homes", "Find a home"], ["/land-and-build", "Land and build"], ["/materials", "Materials shop"], ["/services", "Home services"], ["/invest", "Invest"]];
+export const viewport: Viewport = { themeColor: "#f5f0e4", width: "device-width", initialScale: 1, viewportFit: "cover" };
+const explore = [["/homes", "Find a home"], ["/land-and-build", "Land and build"], ["/materials", "Materials shop"], ["/services", "Home services"], ["/invest", "Invest"], ["/blog", "News & stories"], ["/about", "About us"]];
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (<html lang="en" className={`${sans.variable} ${serif.variable}`} suppressHydrationWarning>
     {/* suppressHydrationWarning: browser extensions (ClickUp, Grammarly, etc.) inject attributes into <body> before React loads, which is not a real mismatch. */}
@@ -18,6 +18,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <a href={gmailLink()} target="_blank" rel="noopener" className="mt-2 flex w-fit items-center gap-2 font-semibold text-cream hover:text-sand"><span className="flex h-5 w-5 items-center justify-center rounded bg-white"><Gmail width={14} height={14} /></span>Email us on Gmail</a>
           <Link href="/contact" className="btn-primary mt-4">Talk to an agent</Link>
           <NewsletterButton className="mt-3 block text-left text-cream/80 underline-offset-2 transition hover:text-sand hover:underline">Get free deal alerts by email</NewsletterButton></div></div>
-        <div className="border-t border-cream/10 py-5 text-center text-xs text-cream/50">© {new Date().getFullYear()} B B Homes. All rights reserved.</div></footer>
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-cream/10 py-5 text-center text-xs text-cream/50 sm:flex-row"><span>© {new Date().getFullYear()} B B Homes. All rights reserved.</span><span className="flex gap-4"><Link href="/privacy" className="hover:text-sand">Privacy</Link><Link href="/terms" className="hover:text-sand">Terms</Link><Link href="/blog" className="hover:text-sand">News &amp; stories</Link></span></div></footer>
       <a href={whatsappLink("Hello B B Homes, I'd like to speak to your team.\n\nName:\nPhone:")} target="_blank" rel="noopener noreferrer" aria-label="Message the B B Homes team on WhatsApp" className="whatsapp-float fixed bottom-5 right-5 z-40 flex origin-bottom-right scale-[.65] items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white"><span aria-hidden className="absolute inset-0 -z-10 animate-ping rounded-full bg-[#25D366]/40 [animation-duration:2.5s]" /><WhatsApp width={24} height={24} /><span className="hidden sm:inline">Message the team</span></a></body></html>);
 }

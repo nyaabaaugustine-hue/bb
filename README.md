@@ -2,6 +2,9 @@
 Next.js 15 · TypeScript · Tailwind. Run: `npm install && npm run dev`.
 Set `NEXT_PUBLIC_WHATSAPP` (e.g. 233XXXXXXXXX) in `.env.local`.
 
+## News & stories
+- The `/blog` index and pre-rendered `/blog/[slug]` guides use entries in `lib/blog.ts`.
+
 ## Placeholder (replace before launch)
 - `lib/data.ts`: sample listings, prices, materials. Move to Neon + Drizzle or a headless CMS.
 - `app/api/enquiry/route.ts`: logs only. Persist, notify the team on WhatsApp.

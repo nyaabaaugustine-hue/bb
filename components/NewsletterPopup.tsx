@@ -5,7 +5,7 @@ import Img from "./Img"; import Logo from "./Logo";
 import { IMG } from "@/lib/data";
 import { Close, Check, Phone, Shield } from "./Icons";
 
-const KEY = "bb-newsletter-v2"; const DELAY = 2500; const SNOOZE_DAYS = 1; const EVENT = "bb:newsletter";
+const KEY = "bb-newsletter-v2"; const DELAY = 12000; const SNOOZE_DAYS = 1; const EVENT = "bb:newsletter";
 // New storage key: older dismissals (which could hide the popup for a week) no longer apply.
 const get = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
 const set = (v: string) => { try { localStorage.setItem(KEY, v); } catch { /* storage unavailable */ } };
@@ -34,7 +34,7 @@ export default function NewsletterPopup() {
     const show = () => { if (fired) return; fired = true; cleanup(); setOpen(true); };
     const t = setTimeout(show, force ? 400 : DELAY);
     const onLeave = (e: MouseEvent) => { if (e.clientY <= 0) show(); };
-    const onScroll = () => { const max = document.documentElement.scrollHeight - window.innerHeight; if (max > 0 && window.scrollY / max > 0.3) show(); };
+    const onScroll = () => { const max = document.documentElement.scrollHeight - window.innerHeight; if (max > 0 && window.scrollY / max > 0.55) show(); };
     document.addEventListener("mouseleave", onLeave); window.addEventListener("scroll", onScroll, { passive: true });
     function cleanup() { clearTimeout(t); document.removeEventListener("mouseleave", onLeave); window.removeEventListener("scroll", onScroll); }
     return () => { cleanup(); window.removeEventListener(EVENT, reopen); };
