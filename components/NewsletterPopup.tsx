@@ -1,14 +1,19 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import Img from "./Img"; import Logo from "./Logo";
 import { IMG } from "@/lib/data";
 import { Close, Check, Phone, Shield } from "./Icons";
 
-const KEY = "bb-newsletter-v2"; const DELAY = 12000; const SNOOZE_DAYS = 1; const EVENT = "bb:newsletter";
-// New storage key: older dismissals (which could hide the popup for a week) no longer apply.
+const KEY = "bb-newsletter-v3";
+const DISMISSED_KEY = `${KEY}:dismissed`;
+const DELAY = 900;
+const EVENT = "bb:newsletter";
 const get = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
 const set = (v: string) => { try { localStorage.setItem(KEY, v); } catch { /* storage unavailable */ } };
+const wasDismissed = () => { try { return sessionStorage.getItem(DISMISSED_KEY) === "1"; } catch { return false; } };
+const dismissForSession = () => { try { sessionStorage.setItem(DISMISSED_KEY, "1"); } catch { /* storage unavailable */ } };
 
 /** Any button can reopen the popup, for example the footer link. */
 export function NewsletterButton({ className = "", children = "Get deal alerts" }: { className?: string; children?: React.ReactNode }) {
@@ -20,27 +25,29 @@ const Mail = (p: React.SVGProps<SVGSVGElement>) => <svg width="18" height="18" v
 export default function NewsletterPopup() {
   const [open, setOpen] = useState(false); const [done, setDone] = useState(false); const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   const id = useId(); const box = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
-  // Show shortly after load, on exit intent (desktop) or after some scrolling, whichever comes first.
-  // Skipped if already subscribed or dismissed within the last day. Add ?newsletter=1 to the URL to force it while testing.
+  // Show shortly after load. A dismissal lasts for this tab's session; subscriptions persist.
+  // Add ?newsletter=1 to the URL to force it while testing.
   useEffect(() => {
+    const portalPath = pathname === "/auth" || pathname === "/login" || pathname === "/register"
+      || pathname === "/account" || pathname.startsWith("/account/")
+      || pathname === "/admin" || pathname.startsWith("/admin/");
     const force = new URLSearchParams(window.location.search).has("newsletter");
     const v = get();
-    const blocked = !force && (v === "subscribed" || (!!v && Date.now() - Number(v) < SNOOZE_DAYS * 864e5));
+    const blocked = portalPath || (!force && (v === "subscribed" || wasDismissed()));
     const reopen = () => setOpen(true);
     window.addEventListener(EVENT, reopen);
+    if (portalPath) setOpen(false);
     if (blocked) return () => window.removeEventListener(EVENT, reopen);
     let fired = false;
     const show = () => { if (fired) return; fired = true; cleanup(); setOpen(true); };
     const t = setTimeout(show, force ? 400 : DELAY);
-    const onLeave = (e: MouseEvent) => { if (e.clientY <= 0) show(); };
-    const onScroll = () => { const max = document.documentElement.scrollHeight - window.innerHeight; if (max > 0 && window.scrollY / max > 0.55) show(); };
-    document.addEventListener("mouseleave", onLeave); window.addEventListener("scroll", onScroll, { passive: true });
-    function cleanup() { clearTimeout(t); document.removeEventListener("mouseleave", onLeave); window.removeEventListener("scroll", onScroll); }
+    function cleanup() { clearTimeout(t); }
     return () => { cleanup(); window.removeEventListener(EVENT, reopen); };
-  }, []);
+  }, [pathname]);
 
-  const close = () => { setOpen(false); if (get() !== "subscribed") set(String(Date.now())); };
+  const close = () => { setOpen(false); if (get() !== "subscribed") dismissForSession(); };
 
   // Escape, focus trap, scroll lock. Tells the chat assistant to wait while this is open.
   useEffect(() => {

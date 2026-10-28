@@ -24,7 +24,7 @@ export default function ScreenGuard() {
     const onCtx = (e: MouseEvent) => { if (protectedEl(e) && !editable(e)) { e.preventDefault(); say("Images are protected. Contact us for photos and brochures."); } };
     const onDrag = (e: DragEvent) => { if (protectedEl(e)) e.preventDefault(); };
     const onKey = (e: KeyboardEvent) => {
-      const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+      const k = typeof e.key === "string" ? e.key.toLowerCase() : "", mod = e.ctrlKey || e.metaKey;
       if (mod && (k === "s" || k === "p")) { e.preventDefault(); say("Saving and printing are disabled on this site."); }
     };
     const onKeyUp = (e: KeyboardEvent) => {

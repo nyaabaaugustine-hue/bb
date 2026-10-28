@@ -101,6 +101,7 @@ export default function Nav() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <Link href="/auth" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-ink transition hover:bg-sand/30 lg:inline-flex" onMouseEnter={() => open(null)}>My account</Link>
             <Link href="/contact" className="btn-primary shimmer hidden !rounded-xl transition-transform hover:-translate-y-0.5 hover:shadow-lg lg:inline-flex" onMouseEnter={() => open(null)}>Talk to us</Link>
             <a href={gmailLink()} target="_blank" rel="noopener" aria-label="Email us by Gmail" className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-card shadow-sm transition active:scale-95 min-[400px]:flex lg:hidden"><Gmail width={20} height={20} /></a>
             <button type="button" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ink bg-ink text-sand shadow-md transition active:scale-95 lg:hidden" onClick={() => setMobile((v) => !v)} aria-label={mobile ? "Close menu" : "Open menu"} aria-expanded={mobile} aria-controls="mobile-nav"><Menu /></button>
@@ -168,6 +169,7 @@ export default function Nav() {
             <div className="grid grid-cols-2 gap-2">
               <a href={gmailLink()} target="_blank" rel="noopener" className="btn active:scale-95"><Gmail width={18} height={18} />Email</a>
               <a href={PHONE_HREF} className="btn active:scale-95"><Phone width={16} height={16} />Call</a></div>
+            <Link href="/auth" className="btn justify-center !py-3 active:scale-95">My account</Link>
             <Link href="/contact" className="btn-primary shimmer !py-3 active:scale-95">Talk to us</Link>
           </div>
         </nav></>, document.body)}

@@ -36,13 +36,22 @@ export default function JourneyFlow({ steps }: { steps: readonly JourneyStep[] }
       animationFrame = 0;
     };
 
-    const updateArrow = (progress: number) => {
-      if (!curve || !arrow || !upDirection || !renderer || !scene || !camera) return;
-      const position = curve.getPointAt(progress);
-      const tangent = curve.getTangentAt(progress).normalize();
+    const renderArrowAt = (progress: number) => {
+      if (!curve || !arrow || !upDirection || !renderer || !scene || !camera || !Number.isFinite(progress)) return false;
+      const sampleProgress = Math.min(Math.max(progress, 0), 1);
+      const position = curve.getPoint(sampleProgress);
+      const tangent = curve.getTangent(sampleProgress);
+      if (
+        ![position.x, position.y, position.z, tangent.x, tangent.y, tangent.z].every(Number.isFinite) ||
+        tangent.lengthSq() === 0
+      ) {
+        return false;
+      }
+
       arrow.position.copy(position);
       arrow.quaternion.setFromUnitVectors(upDirection, tangent);
       renderer.render(scene, camera);
+      return true;
     };
 
     const updateLayout = () => {
@@ -75,6 +84,11 @@ export default function JourneyFlow({ steps }: { steps: readonly JourneyStep[] }
           0,
         );
       });
+      if (points.length < 2 || points.some((point) => ![point.x, point.y, point.z].every(Number.isFinite))) {
+        curve = undefined;
+        rootElement.removeAttribute("data-animated");
+        return;
+      }
 
       if (tube) {
         scene.remove(tube);
@@ -88,17 +102,26 @@ export default function JourneyFlow({ steps }: { steps: readonly JourneyStep[] }
         tubeMaterial,
       );
       scene.add(tube);
-      updateArrow(currentProgress);
+      rootElement.dataset.animated = "true";
+      if (!renderArrowAt(currentProgress)) {
+        rootElement.removeAttribute("data-animated");
+      }
     };
 
     const animate = (time: number) => {
       if (disposed || reducedMotion.matches || !curve || !arrow || !upDirection || !renderer || !scene || !camera) return;
-      currentProgress = ((time - startedAt) % 10000) / 10000;
-      const position = curve.getPointAt(currentProgress);
-      const tangent = curve.getTangentAt(currentProgress).normalize();
-      arrow.position.copy(position);
-      arrow.quaternion.setFromUnitVectors(upDirection, tangent);
-      renderer.render(scene, camera);
+      const elapsed = time - startedAt;
+      if (!Number.isFinite(elapsed)) {
+        clearAnimation();
+        rootElement.removeAttribute("data-animated");
+        return;
+      }
+      currentProgress = (((elapsed % 10000) + 10000) % 10000) / 10000;
+      if (!renderArrowAt(currentProgress)) {
+        clearAnimation();
+        rootElement.removeAttribute("data-animated");
+        return;
+      }
       animationFrame = requestAnimationFrame(animate);
     };
 
@@ -131,7 +154,6 @@ export default function JourneyFlow({ steps }: { steps: readonly JourneyStep[] }
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.setClearColor(0x000000, 0);
       canvasElement.replaceChildren(renderer.domElement);
-      rootElement.dataset.animated = "true";
       upDirection = new THREE.Vector3(0, 1, 0);
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
