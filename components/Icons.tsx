@@ -29,6 +29,9 @@ export const Doc = (p: P) => <svg {...base} {...p}><path d="M6 3h9l4 4v14H6z" />
 /** Gmail glyph in its brand colours (does not follow text colour). */
 export const Gmail = (p: P) => <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden {...p}><path fill="#4285F4" d="M2 7.2v10.3C2 18.3 2.7 19 3.5 19h3v-8.2L2 7.2Z" /><path fill="#34A853" d="M17.5 19h3c.8 0 1.5-.7 1.5-1.5V7.2l-4.5 3.6V19Z" /><path fill="#FBBC04" d="M17.5 5.5v5.3L22 7.2V6c0-1.7-1.9-2.7-3.3-1.7l-1.200 1.200Z" /><path fill="#EA4335" d="M6.5 10.8V5.5L12 9.7l5.500-4.200v5.300L12 15l-5.500-4.200Z" /><path fill="#C5221F" d="M2 6v1.200l4.500 3.600V5.500L5.300 4.300C3.900 3.300 2 4.300 2 6Z" /></svg>;
 
+/** Official LinkedIn glyph (filled). Colour it with `text-*` to match the surface. */
+export const LinkedIn = (p: P) => <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" aria-hidden {...p}><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>;
+
 export const KIND_ICON: Record<Kind, (p: P) => React.ReactElement> = { rent: Key, house: Home, land: Land, offplan: Crane, build: Crane, invest: Trend };
 
 export const KIND_BADGE: Record<Kind, string> = { rent: "badge-moss", house: "badge-terra", land: "badge-sand", offplan: "badge-terra", build: "badge-sand", invest: "badge-moss" };

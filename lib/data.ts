@@ -9,6 +9,8 @@ export const PHONE = "+233 54 198 8383";
 export const PHONE_HREF = "tel:+233541988383";
 /** Business Gmail address. Set NEXT_PUBLIC_EMAIL in .env.local (the fallback below is a harmless placeholder). */
 export const EMAIL = process.env.NEXT_PUBLIC_EMAIL ?? "bbhomes@example.com";
+/** B B Homes company LinkedIn page. Set NEXT_PUBLIC_LINKEDIN_URL to activate the team LinkedIn buttons. */
+export const LINKEDIN_URL = (process.env.NEXT_PUBLIC_LINKEDIN_URL ?? "").trim();
 /** Opens a Gmail compose window addressed to B B Homes, with an optional subject and message. */
 export const gmailLink = (subject = "Enquiry from the B B Homes website", body = "") =>
   `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL)}&su=${encodeURIComponent(subject)}${body ? `&body=${encodeURIComponent(body)}` : ""}`;

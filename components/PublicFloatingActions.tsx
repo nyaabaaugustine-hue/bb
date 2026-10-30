@@ -8,7 +8,8 @@ export default function PublicFloatingActions() {
   return (
     <>
       <DeferredConsultant />
-      <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
+      {/* Contact icons start with Gmail at the top, directly under the assistant badge. */}
+      <div className="fixed bottom-[calc(7rem_+_env(safe-area-inset-bottom))] right-4 z-40 flex flex-col items-end gap-3 sm:bottom-[calc(8.25rem_+_env(safe-area-inset-bottom))] sm:right-5">
         <a
           href={gmailLink()}
           target="_blank"
@@ -30,7 +31,7 @@ export default function PublicFloatingActions() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Message the B B Homes team on WhatsApp"
-          className="whatsapp-float relative flex origin-bottom-right scale-[.76] items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white"
+          className="whatsapp-float relative flex h-14 w-14 items-center justify-center gap-2 rounded-full text-sm font-bold text-white sm:h-auto sm:w-auto sm:justify-start sm:px-4 sm:py-3.5"
         >
           <span aria-hidden className="absolute inset-0 -z-10 animate-ping rounded-full bg-[#25D366]/40 [animation-duration:2.5s]" />
           <WhatsApp width={24} height={24} />

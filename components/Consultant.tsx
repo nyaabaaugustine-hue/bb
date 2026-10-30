@@ -132,7 +132,7 @@ export default function Consultant() {
   return (<>
     {/* Teaser bubble */}
     {!open && teaser !== "off" && (
-      <div className="pop-in fixed bottom-[11.75rem] right-4 z-40 w-[min(20rem,calc(100vw-2rem))] sm:right-5">
+      <div className="pop-in fixed bottom-[calc(24rem_+_env(safe-area-inset-bottom))] right-4 z-40 w-[min(20rem,calc(100vw-2rem))] sm:bottom-[calc(26rem_+_env(safe-area-inset-bottom))] sm:right-5">
         <div className="relative rounded-2xl rounded-br-md border border-line bg-card p-4 pr-9 shadow-2xl">
           <button onClick={dismissTeaser} aria-label="Dismiss" className="absolute right-2 top-2 rounded-md p-1 text-mute hover:bg-ink/5"><Close width={14} height={14} /></button>
           <button onClick={() => setOpen(true)} className="block w-full text-left text-sm">
@@ -142,7 +142,7 @@ export default function Consultant() {
 
     {/* Chat panel */}
     {open && (
-      <div role="dialog" aria-label="Chat with the B B Homes assistant" className="pop-in fixed bottom-[11.75rem] right-4 z-50 flex max-h-[min(36rem,calc(100dvh-14rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-2xl sm:right-5">
+      <div role="dialog" aria-label="Chat with the B B Homes assistant" className="pop-in fixed bottom-[calc(24rem_+_env(safe-area-inset-bottom))] right-4 z-50 flex max-h-[min(34rem,calc(100dvh_-_25.5rem_-_env(safe-area-inset-bottom)))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-2xl sm:bottom-[calc(26rem_+_env(safe-area-inset-bottom))] sm:right-5 sm:max-h-[min(34rem,calc(100dvh_-_27.5rem_-_env(safe-area-inset-bottom)))]">
         <header className="relative flex items-center gap-3 overflow-hidden bg-ink px-4 py-3 text-cream">
           <div aria-hidden className="absolute -right-6 -top-10 h-24 w-24 rounded-full bg-terra/40 blur-2xl" />
           <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-cream p-1.5">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={logoUrl(28)} alt="B B Homes" style={{ borderRadius: "6%" }} className="max-h-full max-w-full object-contain" /><span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-ink bg-[#25D366]" /></span>
@@ -174,9 +174,9 @@ export default function Consultant() {
         <p className="border-t border-line bg-card px-4 pb-2.5 pt-1.5 text-center text-[11px] text-mute">Automated assistant. For advice or payment plans, an agent will confirm.</p>
       </div>)}
 
-    {/* Floating button: the B B Homes badge, medium size, in the right-hand dock above the WhatsApp button */}
+    {/* Floating button: the B B Homes badge sits at the top of the right-hand dock, directly above the Gmail icon */}
     <button onClick={() => setOpen((o) => !o)} aria-label={open ? "Close chat" : "Chat with our online consultant"} aria-expanded={open}
-      className="group fixed bottom-[5.25rem] right-2 z-40 flex h-20 w-20 items-center justify-center rounded-full transition duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 sm:right-4 sm:h-24 sm:w-24">
+      className="group fixed bottom-[calc(18.25rem_+_env(safe-area-inset-bottom))] right-4 z-40 flex h-20 w-20 items-center justify-center rounded-full transition duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 sm:bottom-[calc(19.25rem_+_env(safe-area-inset-bottom))] sm:right-5 sm:h-24 sm:w-24">
       {!open && teaser !== "off" && <span aria-hidden className="absolute inset-2 -z-10 animate-ping rounded-full bg-sand/60 [animation-duration:2s]" />}
       {badgeOk
         // eslint-disable-next-line @next/next/no-img-element

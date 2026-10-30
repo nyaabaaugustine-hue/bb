@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import AuthFrame from "@/components/AuthFrame";
 import AuthForm from "@/components/AuthForm";
-import { redirect } from "next/navigation";
+import DemoLogin from "@/components/DemoLogin";
 import { redirectIfSignedIn } from "@/lib/auth/guest";
 
 export const dynamic = "force-dynamic";
@@ -11,11 +11,12 @@ export const metadata: Metadata = {
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
-  if (process.env.NODE_ENV === "development") redirect("/local-demo");
   const { next } = await searchParams;
   await redirectIfSignedIn(next);
+  const demoEnabled = process.env.NODE_ENV === "development" && process.env.TEST_USERS_ENABLED === "true";
   return (
     <AuthFrame title="A more considered way to find your next home." description="Keep property enquiries, viewing requests, valuations and investment updates together.">
+      {demoEnabled && <DemoLogin />}
       <AuthForm mode="login" />
     </AuthFrame>
   );
