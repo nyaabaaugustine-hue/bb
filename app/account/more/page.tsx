@@ -7,6 +7,10 @@ export const metadata: Metadata = { title: "More account options" };
 
 const links = [
   ["/account/site-visits", "Site visits", "View visit requests submitted to the team."],
+  ["/account/messages", "Messages", "Read and reply to your named agent in your private thread."],
+  ["/account/documents", "Documents", "Understand what the team can share with you."],
+  ["/account/profile", "Profile & preferences", "Keep your contact details up to date."],
+  ["/account/payments", "Payments", "Review ledger entries recorded by the team."],
   ["/services", "Home services", "Explore available home care and maintenance services."],
   ["/blog", "Help centre & guides", "Read property guides and common questions."],
   ["/contact", "Contact the team", "Choose WhatsApp, phone, or email."],
@@ -28,7 +32,7 @@ export default function MorePage() {
       <div className="panel mt-6">
         <h2 className="text-xl">Journey-specific areas</h2>
         <p className="mt-2 text-sm leading-6 text-mute">Rental, land, build, owner, investor, and materials sections will appear when those records are supported by your account. We have not assigned a journey stage based on assumptions.</p>
-        <p className="mt-2 text-sm leading-6 text-mute">Notifications, referral tracking, and in-dashboard agent replies are not connected in this release.</p>
+        <p className="mt-2 text-sm leading-6 text-mute">Email notifications and referral tracking are not connected in this release. Replies from your agent appear in your dashboard Messages page.</p>
       </div>
       <div className="mt-6 lg:hidden"><SignOutButton /></div>
     </section>

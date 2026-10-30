@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import CancelRequestButton from "@/components/CancelRequestButton";
 import { auth } from "@/lib/auth/server";
 import { getPool } from "@/lib/db";
+import { formatDate } from "@/lib/format";
+import {
+  customerCancellableStatuses,
+  labelize,
+  requestReference,
+  requestStatusBadgeClass,
+  type RequestStatus,
+} from "@/lib/portal-domain";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,12 +22,10 @@ type RequestRow = {
   request_type: string;
   listing_slug: string | null;
   details: { description?: string; requestedDate?: string | null };
-  status: string;
+  status: RequestStatus;
   created_at: Date;
+  agent_name: string | null;
 };
-
-const label = (value: string) => value.replaceAll("_", " ");
-const referencePrefix = (type: string) => type === "viewing" ? "SV" : ["valuation", "property_submission"].includes(type) ? "QT" : "BB";
 
 export default async function EnquiriesPage() {
   const { data: session, error } = await auth.getSession();
@@ -26,10 +33,12 @@ export default async function EnquiriesPage() {
   if (!session?.user) redirect("/login?next=%2Faccount%2Fenquiries");
 
   const { rows } = await getPool().query<RequestRow>(
-    `SELECT id, request_type, listing_slug, details, status, created_at
-     FROM portal_requests
-     WHERE user_id = $1
-     ORDER BY created_at DESC
+    `SELECT r.id, r.request_type, r.listing_slug, r.details, r.status, r.created_at,
+            agent.display_name AS agent_name
+     FROM portal_requests r
+     LEFT JOIN portal_customers agent ON agent.id = r.assigned_to
+     WHERE r.user_id = $1
+     ORDER BY r.created_at DESC
      LIMIT 100`,
     [session.user.id],
   );
@@ -50,14 +59,22 @@ export default async function EnquiriesPage() {
           <article key={item.id} className="py-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="font-semibold capitalize">{label(item.request_type)}</h2>
-                <p className="mt-1 text-xs font-semibold tracking-wide text-mute">{referencePrefix(item.request_type)}-{item.id.slice(0, 8).toUpperCase()}</p>
+                <h2 className="font-semibold capitalize">{labelize(item.request_type)}</h2>
+                <p className="mt-1 text-xs font-semibold tracking-wide text-mute">{requestReference(item)}</p>
               </div>
-              <span className={`badge ${["confirmed", "completed"].includes(item.status) ? "badge-moss" : "badge-sand"} capitalize`}>{label(item.status)}</span>
+              <span className={`${requestStatusBadgeClass(item.status)} capitalize`}>{labelize(item.status)}</span>
             </div>
             {item.details.description && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-mute">{item.details.description}</p>}
-            <p className="mt-2 text-xs text-mute">Received {new Intl.DateTimeFormat("en-GH", { dateStyle: "medium", timeZone: "Africa/Accra" }).format(item.created_at)}</p>
-            {item.listing_slug && <Link href={`/homes/${item.listing_slug}`} className="mt-2 inline-flex items-center text-sm font-semibold text-terra hover:underline">View property</Link>}
+            <p className="mt-2 text-xs text-mute">
+              Received {formatDate(item.created_at) ?? "date unavailable"}
+              {item.details.requestedDate ? ` · Preferred ${formatDate(item.details.requestedDate) ?? "date unavailable"}` : ""}
+            </p>
+            {item.agent_name && <p className="mt-1 text-xs text-mute">Your contact: <span className="font-semibold text-ink">{item.agent_name}</span></p>}
+            <div className="mt-2 flex flex-wrap items-center gap-4">
+              {item.listing_slug && <Link href={`/homes/${item.listing_slug}`} className="inline-flex items-center text-sm font-semibold text-terra hover:underline">View property</Link>}
+              <Link href="/contact" className="inline-flex items-center text-sm font-semibold text-mute hover:text-terra hover:underline">Ask the team</Link>
+            </div>
+            {customerCancellableStatuses.has(item.status) && <CancelRequestButton id={item.id} reference={requestReference(item)} />}
           </article>
         ))}
       </div>

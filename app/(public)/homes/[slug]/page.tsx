@@ -1,6 +1,6 @@
 import type { Metadata } from "next"; import Link from "next/link"; import { notFound } from "next/navigation";
-import { listings, KIND_LABEL, WHEN, NEXT, PROMISES, money, gmailLink, whatsappLink } from "@/lib/data"; import { Calculator } from "@/components/Tools"; import Enquire from "@/components/Enquire"; import Card from "@/components/Card"; import Img from "@/components/Img";
-import { KIND_BADGE, Pin, Arrow, Shield, Check, Gmail, WhatsApp } from "@/components/Icons";
+import { listings, KIND_LABEL, WHEN, NEXT, PROMISES, money } from "@/lib/data"; import { Calculator } from "@/components/Tools"; import Enquire from "@/components/Enquire"; import Card from "@/components/Card"; import Img from "@/components/Img"; import OneTapContact from "@/components/OneTapContact";
+import { KIND_BADGE, Pin, Arrow, Shield, Check } from "@/components/Icons";
 import SaveHomeButton from "@/components/SaveHomeButton";
 type P = { params: Promise<{ slug: string }> };
 export const generateStaticParams = () => listings.map((l) => ({ slug: l.slug }));
@@ -31,8 +31,13 @@ export default async function Detail({ params }: P) {
       <div className="panel shadow-md"><p className="eyebrow">Interested?</p><p className="mt-1 font-serif text-2xl font-bold">{price}</p>
         <Enquire subject={l.title} label="Enquire in one tap" className="btn-primary btn-lg mt-4 w-full" />
         <SaveHomeButton slug={l.slug} />
-        <a href={whatsappLink(`Hello B B Homes, I'm interested in ${l.title} (${price}) in ${l.zone}.\n\nName:\nPhone:\nPreferred time to be contacted:`)} target="_blank" rel="noopener noreferrer" className="whatsapp-cta mt-2 w-full"><WhatsApp width={20} height={20} />Message us on WhatsApp</a>
-        <a href={gmailLink(`Enquiry: ${l.title}`, `Hello B B Homes,\n\nI'm interested in: ${l.title} (${price}) in ${l.zone}.\n\nName:\nPhone:\nPreferred time to be contacted:`)} target="_blank" rel="noopener" className="btn mt-2 w-full"><Gmail width={20} height={20} />Email us by Gmail</a>
+        <OneTapContact
+          variant="row"
+          subject={`Enquiry: ${l.title}`}
+          message={`Hello B B Homes, I'm interested in ${l.title} (${price}) in ${l.zone}.`}
+          emailBody={`Hello B B Homes,\n\nI'm interested in: ${l.title} (${price}) in ${l.zone}.\n\nName:\nPhone:\nPreferred time to be contacted:`}
+          className="mt-2"
+        />
         <p className="mt-3 flex items-start gap-2 text-xs text-mute"><Shield width={16} height={16} className="mt-0.5 shrink-0 text-moss" />You get a reference number and a named agent. No payment is taken through this website.</p></div>
       {l.kind !== "rent" && <Calculator price={l.price} />}
     </aside></div>

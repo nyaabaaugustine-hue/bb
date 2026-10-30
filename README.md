@@ -1,6 +1,6 @@
 # B B Homes website
 Next.js 16 · TypeScript · Tailwind. Run: `npm install && npm run dev`.
-Set `NEXT_PUBLIC_WHATSAPP` (e.g. 233XXXXXXXXX) in `.env.local`.
+Set `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_EMAIL` and `NEXT_PUBLIC_CLOUDINARY_CLOUD` in `.env.local`. The WhatsApp number is `WA` in `lib/data.ts` (international format, no `+`).
 
 ## News & stories
 - The `/blog` index and pre-rendered `/blog/[slug]` guides use entries in `lib/blog.ts`.
@@ -16,8 +16,8 @@ Set `NEXT_PUBLIC_WHATSAPP` (e.g. 233XXXXXXXXX) in `.env.local`.
 
 ## Placeholder (replace before launch)
 - `lib/data.ts`: sample listings, prices, materials. Move to Neon + Drizzle or a headless CMS.
-- `app/api/enquiry/route.ts`: the public enquiry endpoint still logs only. Connect it to the portal request workflow and team notifications before launch.
-- Photos, logo, real copy, legal pages.
+- Photos, logo, real copy. Keep `/privacy` and `/terms` under review with a lawyer.
+- Public enquiries and deal-alert signups are written to `portal_enquiries` and `newsletter_subscribers`; there is no email delivery worker yet. Send team notifications and confirmation emails before launch.
 
 ## Next
 - Replace sample catalogue data with verified availability, pricing, ownership documents and property-management workflows.

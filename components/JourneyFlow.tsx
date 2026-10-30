@@ -30,6 +30,8 @@ export default function JourneyFlow({ steps }: { steps: readonly JourneyStep[] }
     let currentProgress = 0;
     let layoutKey = "";
     let resizeObserver: ResizeObserver | undefined;
+    let intersectionObserver: IntersectionObserver | undefined;
+    let onScreen = false;
 
     const clearAnimation = () => {
       cancelAnimationFrame(animationFrame);
@@ -109,19 +111,25 @@ export default function JourneyFlow({ steps }: { steps: readonly JourneyStep[] }
     };
 
     const animate = (time: number) => {
-      if (disposed || reducedMotion.matches || !curve || !arrow || !upDirection || !renderer || !scene || !camera) return;
+      animationFrame = 0;
+      if (disposed || !onScreen || document.hidden || reducedMotion.matches || !curve || !arrow || !upDirection || !renderer || !scene || !camera) return;
       const elapsed = time - startedAt;
       if (!Number.isFinite(elapsed)) {
-        clearAnimation();
         rootElement.removeAttribute("data-animated");
         return;
       }
       currentProgress = (((elapsed % 10000) + 10000) % 10000) / 10000;
       if (!renderArrowAt(currentProgress)) {
-        clearAnimation();
         rootElement.removeAttribute("data-animated");
         return;
       }
+      animationFrame = requestAnimationFrame(animate);
+    };
+
+    // Resume only when the animation is ready, visible and the tab is in the foreground.
+    const resume = () => {
+      if (disposed || animationFrame || !onScreen || document.hidden || reducedMotion.matches || !renderer || !curve) return;
+      startedAt = performance.now() - currentProgress * 10000;
       animationFrame = requestAnimationFrame(animate);
     };
 
@@ -176,34 +184,50 @@ export default function JourneyFlow({ steps }: { steps: readonly JourneyStep[] }
       window.addEventListener("resize", updateLayout);
       updateLayout();
       loading = false;
-      startedAt = performance.now();
-      animationFrame = requestAnimationFrame(animate);
+      resume();
     };
 
     const onMotionChange = () => {
-      if (reducedMotion.matches) {
-        clearAnimation();
-      } else if (renderer) {
-        startedAt = performance.now() - currentProgress * 10000;
-        animationFrame = requestAnimationFrame(animate);
-      } else {
-        void start().catch((error) => {
-          loading = false;
-          console.warn("Three.js journey animation could not initialize; static step arrows remain visible.", error);
-        });
-      }
+      if (reducedMotion.matches) clearAnimation();
+      else if (renderer) resume();
+      else void start().catch((error) => {
+        loading = false;
+        console.warn("Three.js journey animation could not initialize; static step arrows remain visible.", error);
+      });
     };
+    const onVisibility = () => { if (document.hidden) clearAnimation(); else resume(); };
 
     reducedMotion.addEventListener("change", onMotionChange);
-    void start().catch((error) => {
-      loading = false;
-      console.warn("Three.js journey animation could not initialize; static step arrows remain visible.", error);
-    });
+    document.addEventListener("visibilitychange", onVisibility);
+
+    if ("IntersectionObserver" in window) {
+      intersectionObserver = new IntersectionObserver(([entry]) => {
+        onScreen = entry.isIntersecting;
+        if (onScreen) {
+          void start().catch((error) => {
+            loading = false;
+            console.warn("Three.js journey animation could not initialize; static step arrows remain visible.", error);
+          });
+          resume();
+        } else {
+          clearAnimation();
+        }
+      }, { rootMargin: "200px" });
+      intersectionObserver.observe(rootElement);
+    } else {
+      onScreen = true;
+      void start().catch((error) => {
+        loading = false;
+        console.warn("Three.js journey animation could not initialize; static step arrows remain visible.", error);
+      });
+    }
 
     return () => {
       disposed = true;
       clearAnimation();
       reducedMotion.removeEventListener("change", onMotionChange);
+      document.removeEventListener("visibilitychange", onVisibility);
+      intersectionObserver?.disconnect();
       window.removeEventListener("resize", updateLayout);
       resizeObserver?.disconnect();
       if (tube) {

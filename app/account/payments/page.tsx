@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
 import { getPool } from "@/lib/db";
+import { formatAmount, formatDate } from "@/lib/format";
+import { labelize, requestStatusBadgeClass } from "@/lib/portal-domain";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,8 +34,12 @@ export default async function PaymentsPage() {
       <div className="mt-5 divide-y divide-line rounded-xl border border-line bg-card px-4 sm:px-6">
         {rows.length === 0 ? <p className="py-7 text-sm text-mute">No payment records have been added to your account.</p> : rows.map((row) => (
           <article key={row.id} className="flex flex-wrap justify-between gap-3 py-4">
-            <div><h2 className="font-semibold capitalize">{row.transaction_type.replaceAll("_", " ")}</h2><p className="mt-1 text-xs text-mute">{row.reference} · {new Intl.DateTimeFormat("en-GH", { dateStyle: "medium", timeZone: "Africa/Accra" }).format(row.created_at)}</p></div>
-            <div className="text-right"><p className="font-semibold">{row.currency} {Number(row.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 })}</p><p className="mt-1 text-xs capitalize text-mute">{row.status}</p></div>
+            <div>
+              <h2 className="font-semibold capitalize">{labelize(row.transaction_type)}</h2>
+              <p className="mt-1 text-xs text-mute">{row.reference} · {formatDate(row.created_at) ?? "date unavailable"}</p>
+              <span className={`${requestStatusBadgeClass(row.status === "verified" ? "completed" : row.status === "rejected" ? "rejected" : "pending")} mt-2 capitalize`}>{row.status}</span>
+            </div>
+            <div className="text-right"><p className="font-semibold">{row.currency} {formatAmount(Number(row.amount))}</p></div>
           </article>
         ))}
       </div>

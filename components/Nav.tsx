@@ -6,7 +6,7 @@ import { Menu, Close, Key, Home, Land, Crane, Trend, Wrench, Doc, Shield, Users,
 
 type Item = { icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement; title: string; text: string; href: string };
 type Mega = { label: string; href: string; items: Item[]; feature: { img: string; eyebrow: string; title: string; text: string; href: string; cta: string } };
-const house = listings.find((l) => l.slug === "existing-three-bed-home")!;
+const house = listings.find((l) => l.slug === "existing-three-bed-home");
 
 const MEGA: Record<string, Mega> = {
   homes: { label: "Find a home", href: "/homes", items: [
@@ -16,7 +16,7 @@ const MEGA: Record<string, Mega> = {
     { icon: Crane, title: "Off-plan", text: "Pay as it is built", href: "/homes" },
     { icon: Crane, title: "Build-to-own", text: "Phased construction on your plot", href: "/homes" },
     { icon: Trend, title: "Invest", text: "Land banks and rental starters", href: "/invest" },
-  ], feature: { img: house.img, eyebrow: "Featured · " + house.zone, title: house.title, text: money(house.price), href: `/homes/${house.slug}`, cta: "View home" } },
+  ], feature: { img: house?.img ?? IMG.hero, eyebrow: house ? `Featured · ${house.zone}` : "Featured homes", title: house?.title ?? "Homes across Ghana", text: house ? money(house.price) : "See verified options", href: house ? `/homes/${house.slug}` : "/homes", cta: "View homes" } },
   build: { label: "Land & build", href: "/land-and-build", items: [
     { icon: Crane, title: "Ownership pathways", text: "Rent-to-own, progressive and build-to-own", href: "/land-and-build" },
     { icon: Doc, title: "Materials shop", text: "Catalogue, estimates and quotes", href: "/materials" },
@@ -45,16 +45,19 @@ export default function Nav() {
   const [progress, setProgress] = useState(0); const [acc, setAcc] = useState<string | null>("homes");
   const [mounted, setMounted] = useState(false); useEffect(() => { setMounted(true); }, []);
   const closeT = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); const head = useRef<HTMLElement>(null);
+  const drawer = useRef<HTMLDivElement>(null); const menuBtn = useRef<HTMLButtonElement>(null); const closeBtn = useRef<HTMLButtonElement>(null);
 
   const open = useCallback((k: string | null) => { clearTimeout(closeT.current); setMenu(k); }, []);
   const later = useCallback(() => { clearTimeout(closeT.current); closeT.current = setTimeout(() => setMenu(null), 140); }, []);
 
-  // Shrink on scroll and track reading progress
+  // Shrink on scroll and track reading progress. State changes only when the rounded percentage moves.
   useEffect(() => {
-    let raf = 0;
+    let raf = 0; let lastProgress = -1;
     const f = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => {
       const y = window.scrollY; setScrolled(y > 24);
-      const max = document.documentElement.scrollHeight - window.innerHeight; setProgress(max > 0 ? Math.min(1, y / max) : 0);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const next = max > 0 ? Math.min(1, y / max) : 0;
+      if (Math.round(next * 100) !== lastProgress) { lastProgress = Math.round(next * 100); setProgress(next); }
     }); };
     f(); window.addEventListener("scroll", f, { passive: true }); window.addEventListener("resize", f);
     return () => { cancelAnimationFrame(raf); window.removeEventListener("scroll", f); window.removeEventListener("resize", f); };
@@ -62,8 +65,30 @@ export default function Nav() {
   useEffect(() => { setMenu(null); setMobile(false); }, [p]);
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") { setMenu(null); setMobile(false); } }; document.addEventListener("keydown", k); return () => document.removeEventListener("keydown", k); }, []);
   useEffect(() => () => clearTimeout(closeT.current), []);
-  // Lock page scroll while the mobile drawer is open
-  useEffect(() => { if (!mobile) return; const prev = document.body.style.overflow; document.body.style.overflow = "hidden"; return () => { document.body.style.overflow = prev; }; }, [mobile]);
+  // Lock the page, mark the rest inert and keep focus inside the drawer while it is open.
+  useEffect(() => {
+    if (!mobile) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const background = [document.getElementById("main"), document.querySelector("footer")].filter((el): el is HTMLElement => !!el);
+    background.forEach((el) => el.setAttribute("inert", ""));
+    closeBtn.current?.focus();
+    const k = (e: KeyboardEvent) => {
+      if (e.key !== "Tab" || !drawer.current) return;
+      const f = Array.from(drawer.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')).filter((el) => el.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", k);
+    return () => {
+      document.body.style.overflow = prev;
+      background.forEach((el) => el.removeAttribute("inert"));
+      document.removeEventListener("keydown", k);
+      menuBtn.current?.focus();
+    };
+  }, [mobile]);
   // Close the drawer if the window grows to desktop width
   useEffect(() => { const mq = window.matchMedia("(min-width: 1024px)"); const f = () => mq.matches && setMobile(false); mq.addEventListener("change", f); return () => mq.removeEventListener("change", f); }, []);
 
@@ -71,7 +96,7 @@ export default function Nav() {
   const isOn = (href: string) => p === href || p.startsWith(href + "/");
 
   return (<>
-    <header ref={head} className="fixed inset-x-0 top-0 z-[55] px-3 pt-3" onMouseLeave={later}
+    <header ref={head} className="fixed inset-x-0 top-0 z-[55] pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))]" onMouseLeave={later}
     onBlur={(e) => { if (!head.current?.contains(e.relatedTarget as Node)) setMenu(null); }}>
     <div className="header-drop relative mx-auto max-w-6xl">
 
@@ -82,7 +107,7 @@ export default function Nav() {
       <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 lg:backdrop-blur-xl ${scrolled ? "border-line bg-cream/95 shadow-2xl max-lg:bg-cream" : "border-white/50 bg-cream/80 shadow-lg max-lg:bg-cream"}`}>
         {/* Utility strip (collapses on scroll) */}
         <div className={`hidden items-center justify-between overflow-hidden px-5 text-xs text-mute transition-all duration-300 lg:flex ${scrolled ? "max-h-0 border-0 py-0 opacity-0" : "max-h-10 border-b border-line/70 py-1.5 opacity-100"}`}>
-          <span className="flex items-center gap-1.5"><Pin width={13} height={13} className="text-terra" />Tamale, Ghana · serving Accra, Kumasi and Tamale</span>
+          <span className="flex items-center gap-1.5"><Pin width={13} height={13} className="text-terra" /><span className="text-terra">Tamale, Ghana · serving Accra, Kumasi and Tamale</span></span>
           <span className="flex items-center gap-5">
             <a href={PHONE_HREF} className="flex items-center gap-1.5 font-semibold text-ink transition hover:text-terra"><Phone width={13} height={13} />{PHONE}</a>
             <a href={gmailLink()} target="_blank" rel="noopener" className="flex items-center gap-1.5 font-semibold text-ink transition hover:text-terra"><Gmail width={15} height={15} />Gmail</a></span>
@@ -104,7 +129,7 @@ export default function Nav() {
             <Link href="/auth" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-ink transition hover:bg-sand/30 lg:inline-flex" onMouseEnter={() => open(null)}>My account</Link>
             <Link href="/contact" className="btn-primary shimmer hidden !rounded-xl transition-transform hover:-translate-y-0.5 hover:shadow-lg lg:inline-flex" onMouseEnter={() => open(null)}>Talk to us</Link>
             <a href={gmailLink()} target="_blank" rel="noopener" aria-label="Email us by Gmail" className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-card shadow-sm transition active:scale-95 min-[400px]:flex lg:hidden"><Gmail width={20} height={20} /></a>
-            <button type="button" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ink bg-ink text-sand shadow-md transition active:scale-95 lg:hidden" onClick={() => setMobile((v) => !v)} aria-label={mobile ? "Close menu" : "Open menu"} aria-expanded={mobile} aria-controls="mobile-nav"><Menu /></button>
+            <button ref={menuBtn} type="button" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ink bg-ink text-sand shadow-md transition active:scale-95 lg:hidden" onClick={() => setMobile((v) => !v)} aria-label={mobile ? "Close menu" : "Open menu"} aria-expanded={mobile} aria-controls="mobile-nav"><Menu /></button>
           </div>
         </div>
 
@@ -139,10 +164,11 @@ export default function Nav() {
     {/* Mobile and tablet drawer is a sibling of the header so header events cannot intercept it. */}
     {mobile && mounted && createPortal(<>
         <button type="button" aria-label="Close menu" onClick={() => setMobile(false)} className="backdrop-in fixed inset-0 z-[60] border-0 bg-ink/60 p-0 backdrop-blur-sm lg:hidden" />
-        <nav id="mobile-nav" aria-label="Mobile" className="drawer-in fixed inset-y-0 right-0 z-[61] flex h-[100dvh] max-h-[100dvh] w-[min(22rem,92vw)] flex-col rounded-l-3xl bg-cream pt-[env(safe-area-inset-top)] shadow-2xl lg:hidden">
+        <div id="mobile-nav" role="dialog" aria-modal="true" aria-label="Mobile menu" ref={drawer} className="drawer-in fixed inset-y-0 right-0 z-[61] flex h-[100dvh] max-h-[100dvh] w-[min(22rem,92vw)] flex-col rounded-l-3xl bg-cream pt-[env(safe-area-inset-top)] shadow-2xl lg:hidden">
+        <nav aria-label="Mobile" className="flex h-full min-h-0 flex-col pr-[env(safe-area-inset-right)]">
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <Link href="/" aria-label="B B Homes, home page" onClick={() => setMobile(false)}><Logo height={36} blend /></Link>
-            <button onClick={() => setMobile(false)} aria-label="Close menu" className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-card transition active:scale-90 hover:rotate-90"><Close width={20} height={20} /></button>
+            <button ref={closeBtn} onClick={() => setMobile(false)} aria-label="Close menu" className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-card transition active:scale-90 hover:rotate-90"><Close width={20} height={20} /></button>
           </div>
 
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3">
@@ -161,7 +187,7 @@ export default function Nav() {
               return (<Link key={l.href} href={l.href} aria-current={on ? "page" : undefined} className={`stagger flex items-center justify-between border-b border-line/70 py-3.5 text-base font-bold transition last:border-0 ${on ? "text-terra" : ""}`} style={{ animationDelay: `${300 + i * 60}ms` }}>
                 <span className="flex items-center gap-2.5"><I width={18} height={18} className="text-terra" />{l.label}</span><Arrow width={16} height={16} /></Link>); })}
 
-            <p className="stagger mt-5 flex items-start gap-1.5 text-xs text-mute" style={{ animationDelay: "430ms" }}><Pin width={14} height={14} className="mt-0.5 shrink-0 text-terra" />Tamale, Ghana · serving Accra, Kumasi and Tamale</p>
+            <p className="stagger mt-5 flex items-start gap-1.5 text-xs text-mute" style={{ animationDelay: "430ms" }}><Pin width={14} height={14} className="mt-0.5 shrink-0 text-terra" /><span className="text-terra">Tamale, Ghana · serving Accra, Kumasi and Tamale</span></p>
           </div>
 
           {/* Pinned actions */}
@@ -172,6 +198,6 @@ export default function Nav() {
             <Link href="/auth" className="btn justify-center !py-3 active:scale-95">My account</Link>
             <Link href="/contact" className="btn-primary shimmer !py-3 active:scale-95">Talk to us</Link>
           </div>
-        </nav></>, document.body)}
+        </nav></div></>, document.body)}
   </>);
 }

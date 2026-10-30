@@ -18,28 +18,22 @@ const roleLabels: Record<PortalRole, string> = {
   customer: "Customer",
 };
 
-export default function RoleManager({ initialUsers }: { initialUsers: { id: string; email: string; display_name: string }[] }) {
+export default function RoleManager({ initialUsers }: { initialUsers: RoleUser[] }) {
   const router = useRouter();
-  const [users, setUsers] = useState<RoleUser[]>(
-    initialUsers.map((user) => ({ ...user, role: "customer", bootstrap_admin: false })),
-  );
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState(initialUsers);
+  const [query, setQuery] = useState("");
   const [pendingId, setPendingId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  async function loadUsers() {
-    const response = await fetch("/api/admin/users", { cache: "no-store" });
-    const result = await response.json();
-    if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "We couldn't load user roles.");
-    setUsers(result.users as RoleUser[]);
-  }
+  useEffect(() => setUsers(initialUsers), [initialUsers]);
 
-  useEffect(() => {
-    loadUsers()
-      .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : "We couldn't load user roles."))
-      .finally(() => setLoading(false));
-  }, []);
+  const matching = users.filter((user) => {
+    const needle = query.trim().toLowerCase();
+    return !needle || `${user.display_name} ${user.email}`.toLowerCase().includes(needle);
+  });
+  const staffCount = users.filter((user) => user.role === "staff").length;
+  const administratorCount = users.filter((user) => user.role === "administrator").length;
 
   async function changeRole(userId: string, role: PortalRole) {
     const target = users.find((user) => user.id === userId);
@@ -71,18 +65,24 @@ export default function RoleManager({ initialUsers }: { initialUsers: { id: stri
   }
 
   return (
-    <section className="panel mt-8">
-      <div>
-        <p className="eyebrow">Access control</p>
-        <h2 className="mt-2 text-2xl">User roles</h2>
-        <p className="mt-1 text-sm leading-6 text-mute">Administrators have the highest access. Staff can manage requests; customers can only access their own account. Bootstrap administrators are controlled by the server environment.</p>
+    <section id="user-roles" className="panel mt-8 scroll-mt-28">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow">Access control</p>
+          <h2 className="mt-2 text-2xl">User roles</h2>
+          <p className="mt-1 text-sm leading-6 text-mute">Administrators have the highest access. Staff can manage requests and enquiries; customers can only access their own account. Bootstrap administrators are controlled by the server environment.</p>
+        </div>
+        <span className="badge badge-sand">{administratorCount} admin · {staffCount} staff</span>
       </div>
+      <label className="mt-4 block max-w-sm text-sm font-semibold">Find a user
+        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or email" className="field mt-1 min-h-11 w-full" />
+      </label>
       {error && <p role="alert" className="mt-4 rounded-lg border border-red-800/20 bg-red-50 px-4 py-3 text-sm font-medium text-red-900">{error}</p>}
       {notice && <p role="status" className="mt-4 rounded-lg border border-moss/20 bg-moss/5 px-4 py-3 text-sm font-medium text-moss">{notice}</p>}
       <div className="mt-4 divide-y divide-line border-y border-line">
-        {loading ? <p role="status" className="py-4 text-sm text-mute">Loading users…</p> : users.length === 0 ? (
-          <p className="py-4 text-sm text-mute">No customer accounts yet.</p>
-        ) : users.map((user) => (
+        {matching.length === 0 ? (
+          <p className="py-4 text-sm text-mute">{users.length === 0 ? "No customer accounts yet." : "No users match this search."}</p>
+        ) : matching.map((user) => (
           <div key={user.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
             <div className="min-w-0">
               <p className="truncate font-semibold">{user.display_name || user.email}</p>
@@ -94,7 +94,7 @@ export default function RoleManager({ initialUsers }: { initialUsers: { id: stri
               <select
                 className="field min-h-10 w-44"
                 value={user.role}
-                disabled={loading || pendingId === user.id || user.bootstrap_admin}
+                disabled={pendingId === user.id || user.bootstrap_admin}
                 onChange={(event) => changeRole(user.id, event.target.value as PortalRole)}
               >
                 {portalRoles.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}

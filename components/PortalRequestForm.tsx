@@ -2,16 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-
-const requestTypes = [
-  ["viewing", "Book a viewing"],
-  ["rental", "Ask about renting"],
-  ["purchase", "Ask about buying"],
-  ["investment", "Discuss an investment"],
-  ["valuation", "Request a valuation"],
-  ["property_submission", "Submit my property"],
-  ["consultation", "Book a meeting"],
-];
+import { listings, money } from "@/lib/data";
+import { requestTypeLabels, requestTypes } from "@/lib/portal-domain";
 
 export default function PortalRequestForm() {
   const router = useRouter();
@@ -27,6 +19,11 @@ export default function PortalRequestForm() {
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const date = String(form.get("requestedDate") ?? "");
+    if (date && Number.isNaN(Date.parse(date))) {
+      setError("Choose a valid preferred date, or leave it blank.");
+      setPending(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/portal/requests", {
@@ -46,7 +43,7 @@ export default function PortalRequestForm() {
       }
 
       formElement.reset();
-      setSuccess(`Request ${String(result.request.id).slice(0, 8).toUpperCase()} received. Our team will review it before confirming next steps.`);
+      setSuccess(`Request ${result.request.reference} received. Our team will review it before confirming next steps.`);
       router.refresh();
     } catch {
       setError("We couldn't send your request. Check your connection and try again.");
@@ -60,12 +57,17 @@ export default function PortalRequestForm() {
       <div>
         <label className="label" htmlFor="request-type">What would you like to do?</label>
         <select id="request-type" name="type" className="field min-h-12" required>
-          {requestTypes.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+          {requestTypes.map((value) => <option value={value} key={value}>{requestTypeLabels[value]}</option>)}
         </select>
       </div>
       <div>
-        <label className="label" htmlFor="listing-slug">Property reference <span className="font-normal text-mute">(optional)</span></label>
-        <input id="listing-slug" name="listingSlug" maxLength={120} className="field min-h-12" placeholder="Paste the listing slug (the last part of its link)" />
+        <label className="label" htmlFor="listing-slug">Property <span className="font-normal text-mute">(optional)</span></label>
+        <select id="listing-slug" name="listingSlug" className="field min-h-12" defaultValue="">
+          <option value="">Not property-specific</option>
+          {listings.map((listing) => (
+            <option key={listing.slug} value={listing.slug}>{listing.title} · {listing.zone} · {money(listing.price)}</option>
+          ))}
+        </select>
       </div>
       <div>
         <label className="label" htmlFor="requested-date">Preferred date <span className="font-normal text-mute">(optional)</span></label>

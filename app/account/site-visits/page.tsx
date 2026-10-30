@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
 import { getPool } from "@/lib/db";
+import { formatDate, formatDateTime } from "@/lib/format";
+import { labelize, requestReference, requestStatusBadgeClass } from "@/lib/portal-domain";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -42,11 +44,11 @@ export default async function SiteVisitsPage() {
           <article key={visit.id} className="py-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-semibold">Site visit request</h2>
-              <span className={`badge ${visit.status === "confirmed" ? "badge-moss" : "badge-sand"} capitalize`}>{visit.status.replaceAll("_", " ")}</span>
+              <span className={`${requestStatusBadgeClass(visit.status)} capitalize`}>{labelize(visit.status)}</span>
             </div>
-            {visit.details.requestedDate && <p className="mt-2 text-sm">Preferred time: {new Intl.DateTimeFormat("en-GH", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Accra" }).format(new Date(visit.details.requestedDate))}</p>}
+            {visit.details.requestedDate && <p className="mt-2 text-sm">Preferred time: {formatDateTime(visit.details.requestedDate) ?? "date unavailable"}</p>}
             {visit.details.description && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-mute">{visit.details.description}</p>}
-            <p className="mt-2 text-xs text-mute">Request ref SV-{visit.id.slice(0, 8).toUpperCase()} · Submitted {new Intl.DateTimeFormat("en-GH", { dateStyle: "medium", timeZone: "Africa/Accra" }).format(visit.created_at)}</p>
+            <p className="mt-2 text-xs text-mute">Request ref {requestReference({ id: visit.id, request_type: "viewing" })} · Submitted {formatDate(visit.created_at) ?? "date unavailable"}</p>
             {visit.listing_slug && <Link href={`/homes/${visit.listing_slug}`} className="mt-2 inline-flex text-sm font-semibold text-terra hover:underline">View property</Link>}
           </article>
         ))}

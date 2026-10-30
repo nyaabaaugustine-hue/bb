@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
+import { loadRoleUsers } from "@/lib/admin-data";
 import {
   getBootstrapAdministratorEmails,
   getPortalRole,
@@ -33,26 +34,7 @@ export async function GET() {
   if ("response" in access) return access.response;
 
   try {
-    const { rows } = await getPool().query<{
-      id: string;
-      email: string;
-      display_name: string;
-      role: PortalRole;
-      bootstrap_admin: boolean;
-    }>(
-      `SELECT c.id, c.email, c.display_name,
-              CASE
-                WHEN lower(c.email) = ANY($1::text[]) THEN 'administrator'
-                ELSE COALESCE(r.role, 'customer')
-              END AS role,
-              lower(c.email) = ANY($1::text[]) AS bootstrap_admin
-       FROM portal_customers c
-       LEFT JOIN portal_user_roles r ON r.user_id = c.id
-       ORDER BY c.display_name, c.email
-       LIMIT 500`,
-      [getBootstrapAdministratorEmails()],
-    );
-    return NextResponse.json({ users: rows });
+    return NextResponse.json({ users: await loadRoleUsers() });
   } catch (error) {
     console.error("Role management user list failed", error);
     return NextResponse.json({ error: "We couldn't load user roles." }, { status: 503 });

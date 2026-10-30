@@ -13,6 +13,8 @@ export const Wrench = (p: P) => <svg {...base} {...p}><path d="M14.7 6.3a4 4 0 0
 export const Pin = (p: P) => <svg {...base} {...p}><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12Z" /><circle cx="12" cy="10" r="2.5" /></svg>;
 export const Check = (p: P) => <svg {...base} {...p}><path d="m5 12 5 5L20 7" /></svg>;
 export const Arrow = (p: P) => <svg {...base} {...p}><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
+export const Play = (p: P) => <svg {...base} {...p}><path d="M8 5.5v13l11-6.5z" /></svg>;
+export const Pause = (p: P) => <svg {...base} {...p}><path d="M9 5v14M15 5v14" /></svg>;
 export const Menu = (p: P) => <svg {...base} {...p}><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
 export const Close = (p: P) => <svg {...base} {...p}><path d="M6 6l12 12M18 6 6 18" /></svg>;
 export const Chat = (p: P) => <svg {...base} {...p}><path d="M21 12a8 8 0 0 1-11.7 7L4 20l1.1-4.6A8 8 0 1 1 21 12Z" /></svg>;

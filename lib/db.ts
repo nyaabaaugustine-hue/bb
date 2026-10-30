@@ -23,6 +23,9 @@ export function getPool() {
       max: 5,
       idleTimeoutMillis: 10_000,
       connectionTimeoutMillis: 10_000,
+      statement_timeout: 15_000,
+      query_timeout: 20_000,
+      application_name: "bbhomes-web",
     });
     attachDatabasePool(pool);
     globalWithPool.__bbhomesPool = pool;

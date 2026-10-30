@@ -37,18 +37,44 @@ const expectRedirect = (path, mustContain) => async () => {
 console.log(`Smoke testing ${base}\n`);
 
 // Public pages
-for (const path of ["/", "/homes", "/contact", "/about", "/services", "/blog", "/login", "/register", "/auth"]) {
+for (const path of ["/", "/homes", "/homes/existing-three-bed-home", "/land-and-build", "/materials", "/invest", "/contact", "/about", "/services", "/blog", "/blog/verify-land-before-you-buy", "/privacy", "/terms", "/register", "/auth"]) {
   await check(`GET ${path} is public (200)`, expectStatus(path, 200));
 }
+await check("GET /login is public (200, or the dev demo redirect)", async () => {
+  const res = await hit("/login");
+  if (res.status === 200) return null;
+  const location = res.headers.get("location") || "";
+  return res.status === 307 && location.includes("/local-demo")
+    ? null
+    : `expected 200 or a dev redirect to /local-demo, got ${res.status} ${location}`;
+});
 await check("Unknown route returns 404", expectStatus("/this-page-does-not-exist", 404));
+
+// Crawler and security basics
+for (const path of ["/sitemap.xml", "/robots.txt"]) {
+  await check(`GET ${path} is served (200)`, expectStatus(path, 200));
+}
+await check("Public pages send security headers", async () => {
+  const res = await hit("/");
+  const csp = res.headers.get("content-security-policy") || "";
+  const checks = [
+    [res.headers.get("x-content-type-options") === "nosniff", "x-content-type-options"],
+    [res.headers.get("x-frame-options") === "DENY", "x-frame-options"],
+    [!!res.headers.get("referrer-policy"), "referrer-policy"],
+    [csp.includes("frame-ancestors 'none'"), "content-security-policy"],
+  ];
+  const missing = checks.filter(([ok]) => !ok).map(([, name]) => name);
+  return missing.length ? `missing or invalid: ${missing.join(", ")}` : null;
+});
 
 // Route protection (proxy.ts)
 await check("/account redirects to login", expectRedirect("/account", "/login"));
 await check("/account/saved keeps its deep link", expectRedirect("/account/saved", "next=%2Faccount%2Fsaved"));
+await check("/account/messages keeps its deep link", expectRedirect("/account/messages", "next=%2Faccount%2Fmessages"));
 await check("/admin redirects to login with next=/admin", expectRedirect("/admin", "next=%2Fadmin"));
 
 // APIs reject anonymous callers
-for (const path of ["/api/portal/requests", "/api/portal/saved-homes", "/api/admin/records", "/api/admin/users"]) {
+for (const path of ["/api/portal/requests", "/api/portal/saved-homes", "/api/portal/messages", "/api/admin/records", "/api/admin/users", "/api/admin/messages"]) {
   await check(`GET ${path} rejects anonymous (401)`, expectStatus(path, 401));
 }
 
@@ -60,6 +86,22 @@ await check("PATCH /api/admin/users with foreign Origin is refused (403)",
   expectStatus("/api/admin/users", 403, { method: "PATCH", headers: { ...json, origin: "https://evil.example" }, body: "{}" }));
 await check("POST /api/portal/requests with same Origin but no session is 401",
   expectStatus("/api/portal/requests", 401, { method: "POST", headers: { ...json, origin: base }, body: "{}" }));
+await check("POST /api/portal/messages without Origin is refused (403)",
+  expectStatus("/api/portal/messages", 403, { method: "POST", headers: json, body: "{}" }));
+await check("POST /api/portal/messages with same Origin but no session is 401",
+  expectStatus("/api/portal/messages", 401, { method: "POST", headers: { ...json, origin: base }, body: "{}" }));
+await check("POST /api/admin/messages with foreign Origin is refused (403)",
+  expectStatus("/api/admin/messages", 403, { method: "POST", headers: { ...json, origin: "https://evil.example" }, body: "{}" }));
+await check("PATCH /api/portal/profile with foreign Origin is refused (403)",
+  expectStatus("/api/portal/profile", 403, { method: "PATCH", headers: { ...json, origin: "https://evil.example" }, body: "{}" }));
+await check("PATCH /api/admin/enquiries with foreign Origin is refused (403)",
+  expectStatus("/api/admin/enquiries", 403, { method: "PATCH", headers: { ...json, origin: "https://evil.example" }, body: "{}" }));
+
+// Public forms validate before writing: a same-origin but empty body is a 400
+await check("POST /api/enquiry rejects an empty body (400)",
+  expectStatus("/api/enquiry", 400, { method: "POST", headers: { ...json, origin: base }, body: "{}" }));
+await check("POST /api/subscribe rejects an empty body (400)",
+  expectStatus("/api/subscribe", 400, { method: "POST", headers: { ...json, origin: base }, body: "{}" }));
 
 // Neon Auth handler is mounted and the upstream auth service answers (anything but a server error)
 await check("GET /api/auth/get-session is reachable (not 5xx)", async () => {

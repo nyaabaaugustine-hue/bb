@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { materials, money, gmailLink } from "@/lib/data";
-import Enquire from "./Enquire"; import { materialIcon } from "./MaterialIcons"; import { Gmail } from "./Icons";
+import Enquire from "./Enquire"; import SentNotice from "./SentNotice"; import { materialIcon } from "./MaterialIcons"; import { Gmail } from "./Icons";
 function Range({ label, v, set, min, max, step = 1, fmt }: { label: string; v: number; set: (n: number) => void; min: number; max: number; step?: number; fmt: (n: number) => string }) {
   return <label className="mt-3 block text-sm font-semibold">{label} <b className="text-terra">{fmt(v)}</b><input type="range" min={min} max={max} step={step} value={v} onChange={(e) => set(+e.target.value)} className="mt-1 w-full accent-terra" /></label>;
 }
@@ -42,21 +42,35 @@ export function Shop() {
       {items.length > 0 && <a href={gmailLink(`Materials quote request, ${money(total)} estimate`, `Hello B B Homes,\n\nI would like a quote for:\n${items.map(([i, q]) => `- ${q} x ${materials[+i][0]} (${money(q * materials[+i][1])})`).join("\n")}\n\nEstimate: ${money(total)}\n\nName:\nPhone:\nDelivery location:`)} target="_blank" rel="noopener" className="btn mt-2 w-full"><Gmail width={20} height={20} />Email this list by Gmail</a>}
       <p className="mt-3 text-xs text-mute">For our own developments, external developers and homeowners. An agent applies wholesale pricing.</p></aside></div>);
 }
-const STEPS = ["Received", "Assigned", "On site", "Done"];
 export function ServiceForm() {
-  const [ref, setRef] = useState(""), [n, setN] = useState(0), [svc, setSvc] = useState("Plumbing repair"), [err, setErr] = useState("");
-  useEffect(() => { if (!ref) return; const t = setInterval(() => setN((x) => Math.min(3, x + 1)), 1500); return () => clearInterval(t); }, [ref]);
+  const [ref, setRef] = useState(""), [svc, setSvc] = useState("Plumbing repair"), [err, setErr] = useState("");
   async function go(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = Object.fromEntries(new FormData(e.currentTarget)); setErr("");
-    const r = await fetch("/api/enquiry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, type: "service" }) }); const j = await r.json();
-    if (!r.ok) return setErr(j.error); setN(0); setRef(j.ref);
+    const r = await fetch("/api/enquiry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, type: "service", subject: f.service }) }); const j = await r.json();
+    if (!r.ok) return setErr(typeof j.error === "string" ? j.error : "We couldn't save your request.");
+    setRef(j.ref);
   }
   return (<div className="grid gap-4 md:grid-cols-2">
-    <form onSubmit={go} className="panel space-y-3"><h3 className="text-lg">Request a service</h3>
-      <select name="service" value={svc} onChange={(e) => setSvc(e.target.value)} className="field">{["Plumbing repair", "Electrical fault", "Painting and renovation", "Property management", "Construction support"].map((s) => <option key={s}>{s}</option>)}</select>
-      <select name="urgency" className="field"><option>Today</option><option>This week</option><option>Planned</option></select>
-      <input name="phone" required placeholder="Phone number" inputMode="tel" className="field" />
-      {err && <p className="text-sm text-terra">{err}</p>}<button className="btn-primary w-full">Submit request</button></form>
-    <div className="panel"><h3 className="text-lg">Track your request</h3>
-      {ref ? <><p className="mt-2 text-sm"><b>{ref}</b> · {svc}</p><div className="mt-3 flex gap-2">{STEPS.map((s, i) => <div key={s} className={`flex-1 rounded-lg py-2 text-center text-xs ${i <= n ? "bg-moss text-white" : "bg-line text-mute"}`}>{s}</div>)}</div></> : <p className="mt-2 text-sm text-mute">Every request gets a reference and a visible status, so customers are never left guessing.</p>}</div></div>);
+    {ref ? (
+      <div className="panel">
+        <SentNotice
+          title="Service request received."
+          message={<>A coordinator will call the number you gave about {svc.toLowerCase()}. Nothing is booked or charged until you agree.</>}
+          reference={ref}
+        >
+          <button className="btn mt-5 w-full" onClick={() => { setRef(""); setErr(""); }}>Send another request</button>
+        </SentNotice>
+      </div>
+    ) : (
+      <form onSubmit={go} className="panel space-y-3"><h3 className="text-lg">Request a service</h3>
+        <input name="name" required autoComplete="name" placeholder="Your name" className="field" />
+        <select name="service" value={svc} onChange={(e) => setSvc(e.target.value)} className="field">{["Plumbing repair", "Electrical fault", "Painting and renovation", "Property management", "Construction support"].map((s) => <option key={s}>{s}</option>)}</select>
+        <select name="urgency" className="field"><option>Today</option><option>This week</option><option>Planned</option></select>
+        <input name="phone" required placeholder="Phone number" inputMode="tel" autoComplete="tel" className="field" />
+        <textarea name="message" rows={3} maxLength={2000} placeholder="What needs attention?" className="field resize-y" />
+        {err && <p role="alert" className="text-sm text-terra">{err}</p>}<button className="btn-primary w-full">Submit request</button></form>
+    )}
+    <div className="panel"><h3 className="text-lg">What happens next</h3>
+      <p className="mt-2 text-sm leading-6 text-mute">Every service request gets a reference. A coordinator calls you to confirm the scope, timing and price before any work starts.</p>
+      {ref && <a href="/contact" className="btn mt-4">Contact the team</a>}</div></div>);
 }

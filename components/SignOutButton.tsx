@@ -26,7 +26,7 @@ export default function SignOutButton() {
 
   return (
     <div className="text-right">
-      <button type="button" className="btn" onClick={signOut} disabled={pending}>
+      <button type="button" className="btn !px-3 text-xs sm:!px-4 sm:text-sm" onClick={signOut} disabled={pending}>
         {pending ? "Signing out…" : "Sign out"}
       </button>
       {error && <p role="alert" className="mt-1 text-xs text-red-900">{error}</p>}

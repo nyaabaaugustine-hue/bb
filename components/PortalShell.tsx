@@ -8,7 +8,9 @@ import { Arrow, Chat, Doc, Home, Key, Trend, Users } from "@/components/Icons";
 const primaryLinks = [
   { href: "/account", label: "Overview", Icon: Home, exact: true },
   { href: "/account/enquiries", label: "My enquiries", Icon: Chat },
+  { href: "/account/site-visits", label: "Site visits", Icon: Key },
   { href: "/account/saved", label: "Saved homes", Icon: Key },
+  { href: "/account/payments", label: "Payments", Icon: Trend },
   { href: "/account/messages", label: "Messages", Icon: Chat },
   { href: "/account/documents", label: "Documents", Icon: Doc },
   { href: "/account/profile", label: "Profile & preferences", Icon: Users },
@@ -16,8 +18,8 @@ const primaryLinks = [
 
 const mobileLinks = [
   { href: "/account", label: "Overview", Icon: Home, exact: true },
-  { href: "/account/messages", label: "Messages", Icon: Chat },
-  { href: "/account/documents", label: "Documents", Icon: Doc },
+  { href: "/account/enquiries", label: "Enquiries", Icon: Chat },
+  { href: "/account/saved", label: "Saved", Icon: Key },
   { href: "/account/payments", label: "Payments", Icon: Trend },
   { href: "/account/more", label: "More", Icon: Arrow },
 ];
@@ -46,7 +48,7 @@ export default function PortalShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-[70vh] bg-cream">
-      <div className="mx-auto grid max-w-[1440px] gap-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-10 lg:px-8 lg:pb-12">
+      <div className="mx-auto grid max-w-[1440px] gap-6 px-3 pb-28 pt-4 sm:px-6 sm:pt-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-10 lg:px-8 lg:pb-12">
         <aside className="hidden lg:block">
           <div className="sticky top-28 rounded-2xl border border-line bg-card p-4 shadow-sm">
             <p className="px-3 pb-3 pt-2 text-xs font-bold uppercase tracking-[.14em] text-terra">Your journey</p>
@@ -66,11 +68,11 @@ export default function PortalShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0 [overflow-wrap:anywhere]">{children}</div>
       </div>
 
       <nav aria-label="Dashboard tabs" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/95 pb-[max(.35rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(24,38,31,.08)] backdrop-blur lg:hidden">
-        <ul className="mx-auto grid max-w-xl grid-cols-5">
+        <ul className="mx-auto grid max-w-xl grid-cols-5 px-1">
           {mobileLinks.map(({ href, label, Icon, exact }) => {
             const active = isActive(pathname, href, exact);
             return (

@@ -1,18 +1,33 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
-import { canAccessOperations, getPortalRole, getSessionUser, type PortalRole } from "@/lib/portal";
+import {
+  loadAdminEnquiries,
+  loadAdminRequests,
+  loadAdminSummary,
+  loadLedger,
+  parseEnquiryFilters,
+  parseRequestFilters,
+} from "@/lib/admin-data";
+import { isBootstrapAdministratorEmail } from "@/lib/portal";
+import {
+  canAccessOperations,
+  getPortalRole,
+  getSessionUser,
+  type PortalRole,
+} from "@/lib/portal";
+import {
+  isLedgerType,
+  isRecord,
+  isRequestStatus,
+  requestTransitions,
+  type RequestStatus,
+} from "@/lib/portal-domain";
 import { hasSameOrigin } from "@/lib/request-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const requestTransitions: Record<string, string[]> = {
-  pending: ["in_review", "confirmed", "cancelled", "rejected"],
-  in_review: ["confirmed", "completed", "cancelled", "rejected"],
-  confirmed: ["completed", "cancelled"],
-};
-const ledgerStatuses = new Set(["verified", "rejected"]);
-const ledgerTypes = new Set(["contribution", "withdrawal", "return", "fee"]);
+const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 type AdminAccess =
   | { user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>; role: PortalRole }
@@ -29,7 +44,7 @@ async function operationsSession(): Promise<AdminAccess> {
   return { user, role };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   let access;
   try {
     access = await operationsSession();
@@ -39,32 +54,20 @@ export async function GET() {
   if ("response" in access) return access.response;
 
   try {
-    const db = getPool();
-    const [customers, requests, ledger] = await Promise.all([
-      db.query("SELECT id, email, display_name FROM portal_customers ORDER BY display_name, email LIMIT 500"),
-      db.query(
-        `SELECT r.id, r.user_id, c.email, c.display_name, r.request_type, r.listing_slug,
-                r.details, r.status, r.created_at
-         FROM portal_requests r
-         JOIN portal_customers c ON c.id = r.user_id
-         ORDER BY r.created_at DESC
-         LIMIT 500`,
-      ),
-      access.role === "administrator"
-        ? db.query(
-            `SELECT l.id, l.user_id, c.email, c.display_name, l.transaction_type, l.amount,
-                    l.currency, l.reference, l.status, l.created_at, l.verified_at
-             FROM investment_ledger l
-             JOIN portal_customers c ON c.id = l.user_id
-             ORDER BY l.created_at DESC
-             LIMIT 500`,
-          )
-        : Promise.resolve({ rows: [] }),
+    const params = Object.fromEntries(new URL(request.url).searchParams);
+    const [summary, requests, enquiries, ledger] = await Promise.all([
+      loadAdminSummary(),
+      loadAdminRequests(parseRequestFilters(params)),
+      loadAdminEnquiries(parseEnquiryFilters(params)),
+      access.role === "administrator" ? loadLedger(50) : Promise.resolve([]),
     ]);
     return NextResponse.json({
-      customers: customers.rows,
+      summary,
       requests: requests.rows,
-      ledger: ledger.rows,
+      requestPage: { page: requests.page, totalPages: requests.totalPages, total: requests.total },
+      enquiries: enquiries.rows,
+      enquiryPage: { page: enquiries.page, totalPages: enquiries.totalPages, total: enquiries.total },
+      ledger,
     });
   } catch (error) {
     console.error("Admin portal records failed", error);
@@ -93,15 +96,14 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Enter a valid ledger entry." }, { status: 400 });
   }
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+  if (!isRecord(body)) {
     return NextResponse.json({ error: "Enter a valid ledger entry." }, { status: 400 });
   }
-  const values = body as Record<string, unknown>;
-  const userId = typeof values.userId === "string" ? values.userId.trim() : "";
-  const transactionType = typeof values.transactionType === "string" ? values.transactionType : "";
-  const amount = typeof values.amount === "number" ? values.amount : Number(values.amount);
-  const reference = typeof values.reference === "string" ? values.reference.trim() : "";
-  if (!userId || userId.length > 200 || !ledgerTypes.has(transactionType) ||
+  const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+  const transactionType = body.transactionType;
+  const amount = typeof body.amount === "number" ? body.amount : Number(body.amount);
+  const reference = typeof body.reference === "string" ? body.reference.trim() : "";
+  if (!userId || userId.length > 200 || !isLedgerType(transactionType) ||
       !Number.isFinite(amount) || amount <= 0 || amount > 100_000_000 ||
       Math.round(amount * 100) / 100 !== amount || reference.length < 3 || reference.length > 120) {
     return NextResponse.json({ error: "Check the customer, transaction type, amount and reference." }, { status: 400 });
@@ -129,7 +131,7 @@ export async function POST(request: Request) {
     await client.query("COMMIT");
     return NextResponse.json({ entry: rows[0] }, { status: 201 });
   } catch (error) {
-    await client.query("ROLLBACK");
+    try { await client.query("ROLLBACK"); } catch {}
     console.error("Admin ledger entry creation failed", error);
     return NextResponse.json({ error: "We couldn't save that ledger entry." }, { status: 503 });
   } finally {
@@ -153,16 +155,15 @@ export async function PATCH(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Enter a valid status change." }, { status: 400 });
+    return NextResponse.json({ error: "Enter a valid update." }, { status: 400 });
   }
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return NextResponse.json({ error: "Enter a valid status change." }, { status: 400 });
+  if (!isRecord(body)) {
+    return NextResponse.json({ error: "Enter a valid update." }, { status: 400 });
   }
-  const values = body as Record<string, unknown>;
-  const id = typeof values.id === "string" ? values.id : "";
-  const entityType = values.entityType;
-  const nextStatus = typeof values.status === "string" ? values.status : "";
-  if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id)) {
+
+  const id = typeof body.id === "string" ? body.id : "";
+  const entityType = body.entityType;
+  if (!UUID.test(id)) {
     return NextResponse.json({ error: "The record ID is invalid." }, { status: 400 });
   }
   if (entityType !== "request" && entityType !== "ledger") {
@@ -172,29 +173,14 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Administrator access is required for ledger records." }, { status: 403 });
   }
 
-  const client = await getPool().connect();
-  try {
-    await client.query("BEGIN");
-    if (entityType === "request") {
-      const current = await client.query("SELECT status FROM portal_requests WHERE id = $1 FOR UPDATE", [id]);
-      if (!current.rowCount) {
-        await client.query("ROLLBACK");
-        return NextResponse.json({ error: "Request not found." }, { status: 404 });
-      }
-      const previousStatus = current.rows[0].status as string;
-      if (!requestTransitions[previousStatus]?.includes(nextStatus)) {
-        await client.query("ROLLBACK");
-        return NextResponse.json({ error: "That request cannot move to the selected status." }, { status: 409 });
-      }
-      await client.query(
-        "UPDATE portal_requests SET status = $2, updated_at = now() WHERE id = $1",
-        [id, nextStatus],
-      );
-    } else {
-      if (!ledgerStatuses.has(nextStatus)) {
-        await client.query("ROLLBACK");
-        return NextResponse.json({ error: "Ledger entries can only be verified or rejected." }, { status: 400 });
-      }
+  if (entityType === "ledger") {
+    const nextStatus = body.status;
+    if (nextStatus !== "verified" && nextStatus !== "rejected") {
+      return NextResponse.json({ error: "Ledger entries can only be verified or rejected." }, { status: 400 });
+    }
+    const client = await getPool().connect();
+    try {
+      await client.query("BEGIN");
       const updated = await client.query(
         `UPDATE investment_ledger
          SET status = $2,
@@ -208,19 +194,114 @@ export async function PATCH(request: Request) {
         await client.query("ROLLBACK");
         return NextResponse.json({ error: "Pending ledger entry not found." }, { status: 409 });
       }
+      await client.query(
+        `INSERT INTO portal_audit_log (actor_user_id, action, entity_type, entity_id, metadata)
+         VALUES ($1, 'ledger_status_changed', 'investment_ledger', $2, $3::jsonb)`,
+        [access.user.id, id, JSON.stringify({ status: nextStatus })],
+      );
+      await client.query("COMMIT");
+      return NextResponse.json({ ok: true, status: nextStatus });
+    } catch (error) {
+      try { await client.query("ROLLBACK"); } catch {}
+      console.error("Admin ledger status update failed", error);
+      return NextResponse.json({ error: "We couldn't update that record." }, { status: 503 });
+    } finally {
+      client.release();
+    }
+  }
+
+  const hasStatus = body.status !== undefined;
+  const hasAssignee = Object.hasOwn(body, "assignedTo");
+  const hasNote = Object.hasOwn(body, "note");
+  if (!hasStatus && !hasAssignee && !hasNote) {
+    return NextResponse.json({ error: "Choose a status, an assignee, or a note to update." }, { status: 400 });
+  }
+
+  let nextStatus: RequestStatus | null = null;
+  if (hasStatus) {
+    if (!isRequestStatus(body.status)) {
+      return NextResponse.json({ error: "Choose a valid request status." }, { status: 400 });
+    }
+    nextStatus = body.status;
+  }
+
+  let assignedTo: string | null = null;
+  if (hasAssignee) {
+    if (body.assignedTo === null || body.assignedTo === "") {
+      assignedTo = null;
+    } else if (typeof body.assignedTo === "string" && body.assignedTo.length <= 200) {
+      assignedTo = body.assignedTo;
+    } else {
+      return NextResponse.json({ error: "Choose a valid staff member." }, { status: 400 });
+    }
+  }
+
+  let note: string | null = null;
+  if (hasNote) {
+    if (body.note !== null && typeof body.note !== "string") {
+      return NextResponse.json({ error: "Enter a valid note." }, { status: 400 });
+    }
+    note = typeof body.note === "string" ? body.note.trim().slice(0, 2_000) || null : null;
+  }
+
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const current = await client.query<{ status: RequestStatus }>(
+      "SELECT status FROM portal_requests WHERE id = $1 FOR UPDATE",
+      [id],
+    );
+    if (!current.rowCount) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ error: "Request not found." }, { status: 404 });
+    }
+    const previousStatus = current.rows[0].status;
+
+    if (nextStatus && !requestTransitions[previousStatus].includes(nextStatus)) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ error: "That request cannot move to the selected status." }, { status: 409 });
+    }
+
+    if (assignedTo) {
+      const staff = await client.query<{ role: string; email: string }>(
+        `SELECT COALESCE(r.role, 'customer') AS role, c.email
+         FROM portal_customers c
+         LEFT JOIN portal_user_roles r ON r.user_id = c.id
+         WHERE c.id = $1`,
+        [assignedTo],
+      );
+      if (!staff.rowCount || (staff.rows[0].role !== "staff" && staff.rows[0].role !== "administrator" && !isBootstrapAdministratorEmail(staff.rows[0].email))) {
+        await client.query("ROLLBACK");
+        return NextResponse.json({ error: "Assign requests to a staff member or administrator." }, { status: 400 });
+      }
     }
 
     await client.query(
+      `UPDATE portal_requests
+       SET status = COALESCE($2::text, status),
+           assigned_to = CASE WHEN $3::boolean THEN $4::text ELSE assigned_to END,
+           staff_note = CASE WHEN $5::boolean THEN $6::text ELSE staff_note END,
+           cancelled_at = CASE WHEN $2::text = 'cancelled' THEN now() ELSE cancelled_at END,
+           updated_at = now()
+       WHERE id = $1`,
+      [id, nextStatus, hasAssignee, assignedTo, hasNote, note],
+    );
+    await client.query(
       `INSERT INTO portal_audit_log (actor_user_id, action, entity_type, entity_id, metadata)
-       VALUES ($1, 'record_status_changed', $2, $3, $4::jsonb)`,
-      [access.user.id, entityType, id, JSON.stringify({ status: nextStatus })],
+       VALUES ($1, 'request_updated', 'portal_requests', $2, $3::jsonb)`,
+      [access.user.id, id, JSON.stringify({
+        previousStatus,
+        status: nextStatus ?? previousStatus,
+        assignmentChanged: hasAssignee,
+        noteChanged: hasNote,
+      })],
     );
     await client.query("COMMIT");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, status: nextStatus ?? previousStatus, assignedTo: hasAssignee ? assignedTo : undefined });
   } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Admin record status update failed", error);
-    return NextResponse.json({ error: "We couldn't update that record." }, { status: 503 });
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("Admin request update failed", error);
+    return NextResponse.json({ error: "We couldn't update that request." }, { status: 503 });
   } finally {
     client.release();
   }

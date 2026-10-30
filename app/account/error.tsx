@@ -2,7 +2,7 @@
 
 export default function AccountError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <section className="wrap !pt-32">
+    <section className="wrap !pt-6">
       <div className="mx-auto max-w-xl">
         <p className="eyebrow">Account unavailable</p>
         <h1 className="mt-2 text-3xl">We couldn't load your account.</h1>

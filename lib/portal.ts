@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getPool } from "@/lib/db";
 import type { PortalRole } from "@/lib/portal-roles";
 
@@ -11,15 +12,17 @@ export type PortalUser = {
   emailVerified?: boolean;
 };
 
-export async function syncPortalCustomer(user: PortalUser) {
+/**
+ * Creates the local customer row the first time an authenticated account is
+ * seen. Later reads deliberately do not overwrite profile fields: display name
+ * and phone are owned by the customer through the profile page.
+ */
+export async function ensurePortalCustomer(user: PortalUser) {
   if (!user.id || !user.email) throw new Error("The authenticated account is missing its identity.");
   await getPool().query(
     `INSERT INTO portal_customers (id, email, display_name)
      VALUES ($1, $2, $3)
-     ON CONFLICT (id) DO UPDATE
-       SET email = EXCLUDED.email,
-           display_name = EXCLUDED.display_name,
-           updated_at = now()`,
+     ON CONFLICT (id) DO NOTHING`,
     [user.id, user.email.toLowerCase(), user.name ?? ""],
   );
 }
@@ -56,8 +59,8 @@ export function canAccessOperations(role: PortalRole) {
   return role === "administrator" || role === "staff";
 }
 
-export async function getSessionUser() {
+export const getSessionUser = cache(async () => {
   const { data, error } = await (await import("@/lib/auth/server")).auth.getSession();
   if (error) throw new Error("Unable to verify the current account session.");
   return data?.user ?? null;
-}
+});

@@ -18,7 +18,17 @@ const pad = (n: number) => String(n + 1).padStart(2, "0");
 
 export default function HeroSlider() {
   const [i, setI] = useState(0); const [paused, setPaused] = useState(false); const [x0, setX0] = useState<number | null>(null);
-  const go = useCallback((n: number) => setI((n + SLIDES.length) % SLIDES.length), []);
+  // Only keep visited slides (plus the upcoming one) mounted so five full-size images are not fetched up front.
+  const [seen, setSeen] = useState<ReadonlySet<number>>(() => new Set([0, 1]));
+  const go = useCallback((n: number) => {
+    const next = (n + SLIDES.length) % SLIDES.length;
+    const upcoming = (next + 1) % SLIDES.length;
+    setSeen((prev) => {
+      if (prev.has(next) && prev.has(upcoming)) return prev;
+      const copy = new Set(prev); copy.add(next); copy.add(upcoming); return copy;
+    });
+    setI(next);
+  }, []);
   const s = SLIDES[i];
 
   return (
@@ -27,19 +37,19 @@ export default function HeroSlider() {
       onKeyDown={(e) => { if (e.key === "ArrowRight") go(i + 1); if (e.key === "ArrowLeft") go(i - 1); }}
       onTouchStart={(e) => setX0(e.touches[0].clientX)} onTouchEnd={(e) => { if (x0 !== null) { const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) go(i + (dx < 0 ? 1 : -1)); } setX0(null); }}>
 
-      {/* Slides (images stay mounted so fades are smooth) */}
-      {SLIDES.map((sl, n) => (
+      {/* Visited slides stay mounted so fades are smooth; unvisited ones are never fetched. */}
+      {SLIDES.map((sl, n) => seen.has(n) && (
         <div key={sl.img} aria-hidden={n !== i} className={`absolute inset-0 -z-20 transition-opacity duration-1000 ${n === i ? "opacity-100" : "opacity-0"}`}>
-          <div className={`absolute inset-0 ${n === i ? "kenburns" : ""}`}><Img id={sl.img} alt={n === i ? sl.alt : ""} priority={n === 0} sizes="100vw" /></div>
+          <div className={`absolute inset-0 ${n === i ? "kenburns" : ""}`}><Img id={sl.img} alt={n === i ? sl.alt : ""} priority={n === 0} fetchPriority={n === 0 ? "high" : "low"} sizes="100vw" /></div>
         </div>))}
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/80 to-ink/25" />
       <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-48 bg-gradient-to-t from-ink to-transparent" />
 
-      <div className="wrap relative grid min-h-[40rem] items-center gap-10 !pb-28 !pt-36 md:min-h-[46rem] md:!pt-44 lg:grid-cols-[1.6fr_1fr]">
+      <div className="wrap relative grid min-h-[38rem] items-center gap-6 !pb-28 !pt-[calc(7rem_+_env(safe-area-inset-top))] sm:gap-10 sm:!pt-36 md:min-h-[46rem] md:!pt-44 lg:grid-cols-[1.6fr_1fr]">
         <div aria-live={paused ? "polite" : "off"} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${SLIDES.length}`}>
           <div key={i} className="fade-in">
             <p className="eyebrow !text-sand">{s.eyebrow}</p>
-            <h1 className="mt-3 max-w-3xl text-4xl leading-[1.08] md:text-6xl">{s.title} <span className="text-sand">{s.accent}</span></h1>
+            <h1 className="mt-3 max-w-3xl text-3xl leading-[1.08] min-[380px]:text-4xl md:text-6xl">{s.title} <span className="text-sand">{s.accent}</span></h1>
             <p className="mt-5 max-w-xl text-lg text-cream/80">{s.text}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href={s.cta[1]} className="btn-primary btn-lg">{s.cta[0]} <Arrow width={18} height={18} /></Link>
@@ -47,7 +57,7 @@ export default function HeroSlider() {
           <ol aria-label="Your housing journey" className="mt-10 hidden flex-wrap items-center gap-2 sm:flex">{journey.map(([j, Icon], n) => <li key={j} className="flex items-center gap-2"><span className="flex items-center gap-2 rounded-full border border-cream/20 bg-ink/50 px-4 py-2 text-sm backdrop-blur"><Icon width={16} height={16} className="text-sand" />{j}</span>{n < journey.length - 1 && <Arrow width={14} height={14} className="text-terra" />}</li>)}</ol>
         </div>
 
-        <aside className="rounded-2xl border border-cream/15 bg-ink/60 p-6 shadow-2xl backdrop-blur-md"><p className="eyebrow !text-sand">Speak to an agent</p><p className="mt-2 font-serif text-2xl">Not sure where to start?</p><p className="mt-1 text-sm text-cream/70">Tell us your budget and timing. We reply on the channel you choose.</p>
+        <aside className="rounded-2xl border border-cream/15 bg-ink/60 p-5 shadow-2xl backdrop-blur-md sm:p-6"><p className="eyebrow !text-sand">Speak to an agent</p><p className="mt-2 font-serif text-2xl">Not sure where to start?</p><p className="mt-1 text-sm text-cream/70">Tell us your budget and timing. We reply on the channel you choose.</p>
           <a href={PHONE_HREF} className="mt-5 flex items-center gap-3 rounded-xl bg-cream/10 px-4 py-3 transition hover:bg-cream/20"><Phone width={20} height={20} className="text-sand" /><span><span className="block text-xs text-cream/60">Call us</span><b>{PHONE}</b></span></a>
           <Enquire subject="General enquiry" label="Or send a one-tap enquiry" className="btn mt-3 w-full border-cream/20 bg-transparent text-cream hover:bg-cream/10" /></aside>
       </div>

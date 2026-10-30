@@ -4,21 +4,17 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import Img from "./Img"; import Logo from "./Logo";
 import { IMG } from "@/lib/data";
+import { NEWSLETTER_EVENT } from "@/lib/newsletter";
+import SentNotice from "./SentNotice";
 import { Close, Check, Phone, Shield } from "./Icons";
 
 const KEY = "bb-newsletter-v3";
 const DISMISSED_KEY = `${KEY}:dismissed`;
 const DELAY = 900;
-const EVENT = "bb:newsletter";
 const get = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
 const set = (v: string) => { try { localStorage.setItem(KEY, v); } catch { /* storage unavailable */ } };
 const wasDismissed = () => { try { return sessionStorage.getItem(DISMISSED_KEY) === "1"; } catch { return false; } };
 const dismissForSession = () => { try { sessionStorage.setItem(DISMISSED_KEY, "1"); } catch { /* storage unavailable */ } };
-
-/** Any button can reopen the popup, for example the footer link. */
-export function NewsletterButton({ className = "", children = "Get deal alerts" }: { className?: string; children?: React.ReactNode }) {
-  return <button type="button" onClick={() => window.dispatchEvent(new Event(EVENT))} className={className}>{children}</button>;
-}
 
 const Mail = (p: React.SVGProps<SVGSVGElement>) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>;
 
@@ -37,14 +33,14 @@ export default function NewsletterPopup() {
     const v = get();
     const blocked = portalPath || (!force && (v === "subscribed" || wasDismissed()));
     const reopen = () => setOpen(true);
-    window.addEventListener(EVENT, reopen);
+    window.addEventListener(NEWSLETTER_EVENT, reopen);
     if (portalPath) setOpen(false);
-    if (blocked) return () => window.removeEventListener(EVENT, reopen);
+    if (blocked) return () => window.removeEventListener(NEWSLETTER_EVENT, reopen);
     let fired = false;
     const show = () => { if (fired) return; fired = true; cleanup(); setOpen(true); };
     const t = setTimeout(show, force ? 400 : DELAY);
     function cleanup() { clearTimeout(t); }
-    return () => { cleanup(); window.removeEventListener(EVENT, reopen); };
+    return () => { cleanup(); window.removeEventListener(NEWSLETTER_EVENT, reopen); };
   }, [pathname]);
 
   const close = () => { setOpen(false); if (get() !== "subscribed") dismissForSession(); };
@@ -102,12 +98,13 @@ export default function NewsletterPopup() {
           {/* Compact image on phones */}
           <div className="relative -mx-6 -mt-6 mb-5 h-36 overflow-hidden md:hidden"><Img id={IMG.model2} alt="" sizes="100vw" /><div aria-hidden className="absolute inset-0 bg-gradient-to-t from-card to-transparent" /><Logo height={32} plate className="absolute left-4 top-4" /></div>
           {done ? (
-            <div className="py-6 text-center md:py-16">
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-moss/15 text-moss"><Check width={30} height={30} /></span>
-              <h2 id={`${id}-t`} className="mt-4 text-2xl">You&apos;re on the list</h2>
-              <p className="mx-auto mt-2 max-w-xs text-sm text-mute">Thank you. We&apos;ll send new Ghana real estate deals to your email. You can opt out at any time.</p>
-              <button onClick={() => setOpen(false)} className="btn-primary btn-lg mt-6">Continue browsing</button>
-            </div>
+            <SentNotice
+              title="You're on the list."
+              titleId={`${id}-t`}
+              message="Thank you. New Ghana real estate deals will land in your inbox. You can opt out at any time."
+            >
+              <button onClick={() => setOpen(false)} className="btn-primary btn-lg mt-6 w-full">Continue browsing</button>
+            </SentNotice>
           ) : (
             <form onSubmit={submit} noValidate className="space-y-4">
               <div><p className="eyebrow">Free deal alerts</p>

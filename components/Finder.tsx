@@ -1,13 +1,15 @@
 "use client";
 import { useState } from "react";
-import { Listing, WHEN, ZONES, commit, money } from "@/lib/data";
+import { Listing, WHEN, ZONES, commit, money, featuredListings } from "@/lib/data";
 import Card from "./Card";
+import FeaturedFlip from "./FeaturedFlip";
 import { Home } from "./Icons";
 
 export default function Finder({ listings, compact = false }: { listings: Listing[]; compact?: boolean }) {
   const [zone, setZone] = useState("Any"); const [bud, setBud] = useState(400); const [w, setW] = useState(0);
   const r = listings.filter((l) => l.when === w && (zone === "Any" || l.zone === zone) && commit(l) <= bud * 1000);
-  const reset = () => { setZone("Any"); setBud(800); };
+  const featured = featuredListings(listings);
+  const reset = () => { setZone("Any"); setBud(400); setW(0); };
   return (<div>
     <div className={`panel grid gap-5 !p-5 shadow-md ${compact ? "" : "md:grid-cols-3"}`}>
       <div><label htmlFor="f-zone" className="label">Where</label>
@@ -26,5 +28,6 @@ export default function Finder({ listings, compact = false }: { listings: Listin
         <p className="max-w-sm text-sm text-mute">Try a higher budget, another city or a later horizon, or talk to an agent who knows what is coming up.</p>
         <div className="flex gap-2"><button type="button" className="btn" onClick={reset}>Reset filters</button><a href="/contact" className="btn-primary">Talk to an agent</a></div>
       </div>)}
+    <FeaturedFlip items={featured} />
   </div>);
 }

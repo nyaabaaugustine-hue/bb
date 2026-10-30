@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { getSessionUser, syncPortalCustomer } from "@/lib/portal";
+import { getSessionUser, ensurePortalCustomer } from "@/lib/portal";
 import { getPool } from "@/lib/db";
 import { hasSameOrigin } from "@/lib/request-security";
 import { listings } from "@/lib/data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const listingSlugs = new Set(listings.map(({ slug }) => slug));
 
 async function authenticatedUser() {
   try {
@@ -22,7 +24,6 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Sign in to view saved homes." }, { status: 401 });
 
   try {
-    await syncPortalCustomer(user);
     const { rows } = await getPool().query<{ listing_slug: string; created_at: Date }>(
       `SELECT listing_slug, created_at
        FROM customer_saved_homes
@@ -63,13 +64,13 @@ export async function POST(request: Request) {
     Array.isArray(body) ||
     !("slug" in body) ||
     typeof body.slug !== "string" ||
-    !listings.some(({ slug }) => slug === body.slug)
+    !listingSlugs.has(body.slug)
   ) {
     return NextResponse.json({ error: "Choose a valid home from our listings." }, { status: 400 });
   }
 
   try {
-    await syncPortalCustomer(user);
+    await ensurePortalCustomer(user);
     await getPool().query(
       `INSERT INTO customer_saved_homes (user_id, listing_slug)
        VALUES ($1, $2)
@@ -104,7 +105,7 @@ export async function DELETE(request: Request) {
     Array.isArray(body) ||
     !("slug" in body) ||
     typeof body.slug !== "string" ||
-    !listings.some(({ slug }) => slug === body.slug)
+    !listingSlugs.has(body.slug)
   ) {
     return NextResponse.json({ error: "Choose a valid saved home." }, { status: 400 });
   }

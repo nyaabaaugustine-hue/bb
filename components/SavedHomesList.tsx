@@ -1,30 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Img from "@/components/Img";
-import { KIND_LABEL, Listing, listings, money } from "@/lib/data";
+import { KIND_LABEL, Listing, money } from "@/lib/data";
 import { Arrow } from "@/components/Icons";
 
-export default function SavedHomesList() {
-  const [saved, setSaved] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function SavedHomesList({ initialSaved }: { initialSaved: Listing[] }) {
+  const router = useRouter();
+  const [saved, setSaved] = useState(initialSaved);
   const [error, setError] = useState("");
   const [removing, setRemoving] = useState("");
-
-  async function loadSavedHomes() {
-    const response = await fetch("/api/portal/saved-homes", { cache: "no-store" });
-    const result = await response.json();
-    if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "We couldn't load your saved homes.");
-    const slugs = new Set((result.savedHomes as { slug: string }[]).map(({ slug }) => slug));
-    setSaved(listings.filter((listing) => slugs.has(listing.slug)));
-  }
-
-  useEffect(() => {
-    loadSavedHomes()
-      .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : "We couldn't load your saved homes."))
-      .finally(() => setLoading(false));
-  }, []);
 
   async function remove(slug: string) {
     setRemoving(slug);
@@ -38,6 +25,7 @@ export default function SavedHomesList() {
       const result = await response.json();
       if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "We couldn't remove this home.");
       setSaved((current) => current.filter((listing) => listing.slug !== slug));
+      router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "We couldn't remove this home.");
     } finally {
@@ -45,8 +33,6 @@ export default function SavedHomesList() {
     }
   }
 
-  if (loading) return <p role="status" className="panel text-sm text-mute">Loading your saved homes…</p>;
-  if (error && saved.length === 0) return <p role="alert" className="panel text-sm text-red-900">{error}</p>;
   if (saved.length === 0) {
     return (
       <div className="panel">

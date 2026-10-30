@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "smoke": "node scripts/smoke-test.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed:test-users": "node scripts/seed-test-users.mjs"

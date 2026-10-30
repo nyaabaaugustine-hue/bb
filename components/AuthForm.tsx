@@ -125,6 +125,14 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
           {isRegister ? "Sign in" : "Create an account"}
         </Link>
       </p>
+      {!isRegister && process.env.NODE_ENV === "development" && (
+        <p className="mt-4 text-center text-sm text-mute">
+          Want to try the flow without a real account?{" "}
+          <Link href="/local-demo" className="font-semibold text-terra underline-offset-4 hover:underline">
+            Open local simulator
+          </Link>
+        </p>
+      )}
       <p className="mt-5 text-center text-xs leading-5 text-mute">
         Your account is protected by B B Homes. Property and payment requests are reviewed by our team before they are confirmed.
       </p>

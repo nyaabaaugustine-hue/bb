@@ -1,6 +1,7 @@
 import Link from "next/link"; import Finder from "@/components/Finder"; import Img from "@/components/Img"; import Enquire from "@/components/Enquire";
 import Team from "@/components/Team"; import MapEmbed from "@/components/MapEmbed"; import HeroSlider from "@/components/HeroSlider"; import Offers from "@/components/Offers";
 import JourneyFlow from "@/components/JourneyFlow";
+import ReviewsSection from "@/components/ReviewsSection";
 import { listings, IMG, PROMISES, STEPS, FAQ } from "@/lib/data";
 import { Arrow, Shield, Check } from "@/components/Icons";
 const doors = [
@@ -45,6 +46,8 @@ export default function Home() {
 
     {/* TEAM */}
     <section className="wrap !pt-0"><p className="eyebrow">Our team</p><h2 className="mb-2 mt-1 text-2xl md:text-3xl">The people behind your home</h2><p className="mb-8 max-w-2xl text-mute">Four teams, one promise: a named person answers you, and nothing is hidden. Email any team directly.</p><Team /></section>
+
+    <ReviewsSection />
 
     {/* MAP */}
     <section className="wrap !pt-0"><p className="eyebrow">Find us</p><h2 className="mb-6 mt-1 text-2xl md:text-3xl">Come and see us, and see the sites</h2><MapEmbed /></section>

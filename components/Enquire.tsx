@@ -1,10 +1,14 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Close } from "./Icons";
+import { enquiryChannelLabels, type EnquiryChannel } from "@/lib/portal-domain";
+import { Close } from "./Icons";
+import OneTapContact from "./OneTapContact";
+import SentNotice from "./SentNotice";
 
 export default function Enquire({ subject, label = "Enquire", type = "enquiry", className = "btn-primary" }: { subject: string; label?: string; type?: string; className?: string }) {
   const [open, setOpen] = useState(false); const [ref, setRef] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const [channel, setChannel] = useState<EnquiryChannel>("whatsapp");
   const [mounted, setMounted] = useState(false);
   const titleId = useId(); const trigger = useRef<HTMLButtonElement>(null); const box = useRef<HTMLDivElement>(null);
   useEffect(() => setMounted(true), []);
@@ -46,21 +50,30 @@ export default function Enquire({ subject, label = "Enquire", type = "enquiry", 
         <div ref={box} role="dialog" aria-modal="true" aria-labelledby={titleId} className="panel pop-in relative w-full max-w-sm !p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
           <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="btn-ghost absolute right-3 top-3 !p-1.5"><Close width={18} height={18} /></button>
           {ref ? (
-            <div className="py-2 text-center">
-              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-moss/15 text-moss"><Check width={26} height={26} /></span>
-              <h3 id={titleId} className="mt-3 text-lg">Enquiry sent</h3>
-              <p className="mt-1 text-sm text-mute">Your reference is</p>
-              <p className="my-2 inline-block rounded-md bg-ink px-3 py-1 font-mono text-sm font-bold tracking-wider text-sand">{ref}</p>
-              <p className="text-sm text-mute">A named agent will reply on your chosen channel.</p>
-              <button className="btn mt-5 w-full" onClick={() => setOpen(false)}>Done</button>
-            </div>
+            <SentNotice
+              title="Your enquiry is with our team."
+              titleId={titleId}
+              message={`A named agent will reply on ${enquiryChannelLabels[channel].toLowerCase()}. Keep your reference handy.`}
+              reference={ref}
+            >
+              <div className="mt-5 grid gap-2">
+                <button className="btn-primary w-full" onClick={() => setOpen(false)}>Done</button>
+                <button className="btn w-full" onClick={() => { setRef(""); setErr(""); }}>Send another enquiry</button>
+              </div>
+            </SentNotice>
           ) : (
             <form onSubmit={submit} className="space-y-3">
               <p className="eyebrow">One-tap enquiry</p>
-              <h3 id={titleId} className="!mt-1 mb-2 pr-8 text-lg leading-snug">{subject}</h3>
+              <h3 id={titleId} className="!mt-1 mb-3 pr-8 text-lg leading-snug">{subject}</h3>
+              <div className="rounded-xl border border-line bg-sand/25 p-3">
+                <p className="text-xs font-semibold text-mute">Or reach a person directly</p>
+                <OneTapContact variant="row" subject={`Enquiry: ${subject}`} message={`Hello B B Homes, I would like to ask about ${subject}.`} className="mt-2" />
+              </div>
+              <p className="pt-1 text-xs font-semibold uppercase tracking-wide text-mute">Or leave your details</p>
               <div><label htmlFor={`${titleId}-n`} className="label">Your name</label><input id={`${titleId}-n`} name="name" required autoComplete="name" placeholder="Ama Mensah" className="field" /></div>
               <div><label htmlFor={`${titleId}-p`} className="label">Phone number</label><input id={`${titleId}-p`} name="phone" required type="tel" inputMode="tel" autoComplete="tel" placeholder="024 000 0000" className="field" /></div>
-              <div><label htmlFor={`${titleId}-c`} className="label">Reply by</label><select id={`${titleId}-c`} name="channel" className="field"><option>WhatsApp</option><option>Phone call</option><option>Email</option></select></div>
+              <div><label htmlFor={`${titleId}-e`} className="label">Email <span className="font-normal text-mute">({channel === "email" ? "required" : "optional"})</span></label><input id={`${titleId}-e`} name="email" type="email" required={channel === "email"} autoComplete="email" placeholder="you@example.com" className="field" /></div>
+              <div><label htmlFor={`${titleId}-c`} className="label">Reply by</label><select id={`${titleId}-c`} name="channel" value={channel} onChange={(event) => setChannel(event.target.value as EnquiryChannel)} className="field">{Object.entries(enquiryChannelLabels).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></div>
               {err && <p role="alert" className="rounded-lg bg-terra/10 px-3 py-2 text-sm text-terra">{err}</p>}
               <button disabled={busy} className="btn-primary w-full !py-3">{busy ? "Sending…" : "Send enquiry"}</button>
             </form>

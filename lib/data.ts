@@ -1,5 +1,5 @@
 export type Kind = "rent" | "house" | "land" | "offplan" | "build" | "invest";
-export type Listing = { slug: string; title: string; kind: Kind; zone: string; price: number; when: 0 | 1 | 2; note: string; img: string; gallery?: string[] };
+export type Listing = { slug: string; title: string; kind: Kind; zone: string; price: number; when: 0 | 1 | 2; note: string; img: string; gallery?: string[]; featured?: boolean };
 export const KIND_LABEL: Record<Kind, string> = { rent: "Rent", house: "Buy house", land: "Buy land", offplan: "Off-plan", build: "Build-to-own", invest: "Invest" };
 export const WHEN = ["Now", "Soon", "Later"] as const;
 export const ZONES = ["Accra", "Kumasi", "Tamale"] as const;
@@ -21,8 +21,10 @@ export const MAP_LINK = "https://www.google.com/maps/search/?api=1&query=Aliu+Ma
    Add a real `name` and a Cloudinary `photo` (public id from the bb folder) to each person once you have them.
    Until then the card shows the role with an icon, so no invented names or stock faces appear on the site. */
 export type Member = { role: string; blurb: string; name?: string; photo?: string };
+/** Chairman portrait, hosted on a separate Cloudinary account. Pre-sized and auto-formatted at the source. */
+export const CHAIRMAN_PHOTO = "https://res.cloudinary.com/ea91sdts/image/upload/f_auto,q_auto:good,c_fill,g_auto,w_800,h_1000/v1793375861/Screenshot_7.png";
 export const TEAM: Member[] = [
-  { role: "Chairman", blurb: "Leads B B Homes and stands behind the promise that a home is a human right.", photo: "chairman" },
+  { role: "Chairman", blurb: "Leads B B Homes and stands behind the promise that a home is a human right.", photo: CHAIRMAN_PHOTO },
   { role: "Sales and lettings", blurb: "Your named point of contact. Shortlists homes, plots and rentals and walks you through every step.", photo: "worker" },
   { role: "Construction and materials", blurb: "Plans phased builds and prepares clear materials quotes from our own depot.", photo: "worker2" },
   { role: "Home care", blurb: "Property management, maintenance and renovation after you move in.", photo: "worker3" },
@@ -43,7 +45,7 @@ export const IMG = {
 } as const;
 /** Cloudinary delivery URL: auto format and quality, smart crop, resized on their CDN. */
 export const cld = (id: string, w: number, h?: number) =>
-  `https://res.cloudinary.com/${CLOUD}/image/upload/f_auto,q_auto,c_fill,g_auto,w_${w}${h ? `,h_${h}` : ""}/${id}`;
+  `https://res.cloudinary.com/${CLOUD}/image/upload/f_auto,q_auto:good,c_fill,g_auto,w_${w}${h ? `,h_${h}` : ""}/${id}`;
 
 /** Round B B Homes badge (transparent cutout) used as the chat button. Cloudinary resizes it and serves WebP/AVIF automatically. */
 export const AI_BADGE_ID = "v1793083431/BB_Homes_Corporate_Portrait_Badge_cutout.png";
@@ -59,16 +61,18 @@ export const logoIconUrl = (size: number) => `https://res.cloudinary.com/${CLOUD
 export const listings: Listing[] = [
   { slug: "compact-one-bed-unit", title: "Compact 1-bed unit", kind: "rent", zone: "Accra", price: 1800, when: 0, note: "Managed property", img: IMG.model2, gallery: [IMG.model1, IMG.home2] },
   { slug: "furnished-two-bed-stay", title: "Furnished 2-bed, medium stay", kind: "rent", zone: "Kumasi", price: 2600, when: 0, note: "Short and medium stays", img: IMG.model1, gallery: [IMG.model2, IMG.hero] },
-  { slug: "existing-three-bed-home", title: "Existing 3-bed home", kind: "house", zone: "Kumasi", price: 420000, when: 0, note: "Move in now", img: IMG.home2, gallery: [IMG.hero, IMG.model1] },
+  { slug: "existing-three-bed-home", title: "Existing 3-bed home", kind: "house", zone: "Kumasi", price: 420000, when: 0, note: "Move in now", img: IMG.home2, gallery: [IMG.hero, IMG.model1], featured: true },
   { slug: "affordable-plot-450", title: "Affordable plot, 450 m²", kind: "land", zone: "Tamale", price: 35000, when: 1, note: "Pay in stages", img: IMG.land2, gallery: [IMG.land1, IMG.village] },
   { slug: "plot-600", title: "Plot, 600 m²", kind: "land", zone: "Accra", price: 160000, when: 1, note: "Title documents shown upfront", img: IMG.land1, gallery: [IMG.land2, IMG.village] },
-  { slug: "land-and-house-package", title: "Land and house package", kind: "house", zone: "Kumasi", price: 310000, when: 1, note: "One price, one team", img: IMG.hero, gallery: [IMG.land1, IMG.model1] },
-  { slug: "off-plan-two-bed-apartment", title: "Off-plan 2-bed apartment", kind: "offplan", zone: "Accra", price: 280000, when: 1, note: "Pay as it is built", img: IMG.build1, gallery: [IMG.build2, IMG.model2] },
+  { slug: "land-and-house-package", title: "Land and house package", kind: "house", zone: "Kumasi", price: 310000, when: 1, note: "One price, one team", img: IMG.hero, gallery: [IMG.land1, IMG.model1], featured: true },
+  { slug: "off-plan-two-bed-apartment", title: "Off-plan 2-bed apartment", kind: "offplan", zone: "Accra", price: 280000, when: 1, note: "Pay as it is built", img: IMG.build1, gallery: [IMG.build2, IMG.model2], featured: true },
   { slug: "build-to-own-two-bed", title: "Build-to-own, 2-bed standard design", kind: "build", zone: "Tamale", price: 130000, when: 1, note: "Phased construction", img: IMG.build2, gallery: [IMG.model1, IMG.land2] },
-  { slug: "land-bank-growth-corridor", title: "Land bank, growth corridor", kind: "land", zone: "Kumasi", price: 90000, when: 2, note: "Land investment", img: IMG.village, gallery: [IMG.land1, IMG.land2] },
+  { slug: "land-bank-growth-corridor", title: "Land bank, growth corridor", kind: "land", zone: "Kumasi", price: 90000, when: 2, note: "Land investment", img: IMG.village, gallery: [IMG.land1, IMG.land2], featured: true },
   { slug: "small-family-compound", title: "Small family compound", kind: "invest", zone: "Tamale", price: 240000, when: 2, note: "Portfolio building", img: IMG.model2, gallery: [IMG.village, IMG.build2] },
-  { slug: "rental-starter-three-units", title: "Rental starter, 3 units", kind: "invest", zone: "Accra", price: 520000, when: 2, note: "Development opportunity", img: IMG.model1, gallery: [IMG.build1, IMG.hero] },
+  { slug: "rental-starter-three-units", title: "Rental starter, 3 units", kind: "invest", zone: "Accra", price: 520000, when: 2, note: "Development opportunity", img: IMG.model1, gallery: [IMG.build1, IMG.hero], featured: true },
 ];
+/** Listings marked `featured: true` rotate through the featured panel, newest data change included. */
+export const featuredListings = (all: Listing[]) => all.filter((l) => l.featured);
 export const commit = (l: Listing) => (l.kind === "rent" ? l.price * 12 : l.price);
 export const money = (n: number) => "GHS " + Math.round(n).toLocaleString("en-US");
 export const materials: [string, number][] = [["Cement, 50 kg bag", 95], ["Steel rod, 12 mm", 150], ["Roofing sheet", 120], ["PVC pipe, 4 in", 65], ["Electrical cable roll", 480], ["Door, flush panel", 650], ["Paint, 20 L", 520], ["Floor tiles, per m²", 70], ["Sanitary ware set", 900], ["Tool kit", 350]];
